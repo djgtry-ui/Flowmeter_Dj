@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Flowmeter - Google Sheets</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: radial-gradient(circle at top left, #1e293b, #0f172a); color: white; font-family: sans-serif; }
+        .table-dark { width: 100%; text-align: left; border-collapse: collapse; }
+        .table-dark th { padding: 12px; background: #1e293b; border-bottom: 2px solid #3b82f6; font-size: 12px; text-transform: uppercase; }
+        .table-dark td { padding: 12px; border-bottom: 1px solid #334155; font-size: 14px; }
+        .text-active-green { color: #10b981; font-weight: bold; }
+        .highlight { background-color: rgba(59, 130, 246, 0.2); transition: 0.5s; }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen p-4 md:p-8">
+        <div class="container mx-auto">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold mb-1">Realtime Status Flowmeter</h2>
+                <p class="text-blue-300">Monitoring Data Langsung dari Google Sheets</p>
+            </div>
+
+            <div class="bg-gray-900/50 backdrop-blur-md rounded-xl border border-white/10 p-6 mb-8 shadow-2xl">
+                <div class="text-sm font-semibold text-blue-400 mb-4 uppercase tracking-wider border-b border-blue-500/30 pb-2">
+                    Visualisasi Stock Material
+                </div>
+                <div class="relative h-64 md:h-80">
+                    <canvas id="stockChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-gray-900/50 backdrop-blur-md rounded-xl border border-white/10 shadow-2xl overflow-hidden">
+                <div class="p-4 bg-blue-600/20 font-bold border-b border-blue-500 text-sm flex justify-between items-center">
+                    <span>TABEL RESULT FLOWMETER</span>
+                    <span id="lastUpdate" class="text-xs font-normal opacity-70">Memuat...</span>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="table-dark">
+                        <thead>
+                            <tr>
+                                <th>ID Mesin</th>
+                                <th>Nama Mesin</th>
+                                <th>Material</th>
+                                <th>No PO</th>
+                                <th>No PBI</th>
+                                <th>Stock (Kg)</th>
+                                <th>Target Aktif</th>
+                                <th class="text-active-green">Aktual (Kg)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr>
+                                <td colspan="8" class="text-center py-12 text-gray-500 italic">Menghubungkan ke database Google Sheets...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // MASUKKAN URL CSV GOOGLE SHEETS ANDA DI SINI
+        const GOOGLE_SHEET_CSV_URL = 'PASTE_URL_CSV_ANDA_DI_SINI';
+        
+        let stockChart;
+
+        async function updateDashboard() {
+            try {
+                const response = await fetch(GOOGLE_SHEET_CSV_URL);
+                const data = await response.text();
+                
+                // Parsing CSV sederhana
+                const rows = data.split('\n').slice(1).filter(row => row.trim() !== '');
+                const parsedData = rows.map(row => {
+                    // Menangani CSV yang mungkin memiliki koma di dalam tanda kutip
+                    return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                });
+
+                renderTable(parsedData);
+                renderChart(parsedData);
+                document.getElementById('lastUpdate').innerText = 'Update terakhir: ' + new Date().toLocaleTimeString();
+                
+            } catch (error) {
+                console.error('Gagal mengambil data:', error);
+                document.getElementById('tableBody').innerHTML = `<tr><td colspan="8" class="text-center py-10 text-red-400">Error: Gagal memuat data. Pastikan URL CSV benar dan sudah di-publish.</td></tr>`;
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            let html = '';
+
+            data.forEach(row => {
+                // Asumsi urutan kolom: ID, Nama, Material, NoPO, NoPBI, Stock, Outlet, Target, Aktual
+                // Sesuaikan index [0, 1, 2...] dengan kolom di Google Sheets Anda
+                html += `
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td>${row[0] || '-'}</td>
+                        <td class="font-semibold text-blue-200">${row[1] || '-'}</td>
+                        <td>${row[2] || '-'}</td>
+                        <td>${row[3] || '-'}</td>
+                        <td>${row[4] || '-'}</td>
+                        <td class="text-yellow-400">${row[5] || '0'}</td>
+                        <td>${row[7] || '0'}</td>
+                        <td class="text-active-green">${row[8] || '0'}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function renderChart(data) {
+            const labels = data.map(row => row[1]); // Nama Mesin
+            const stocks = data.map(row => parseFloat(row[5]) || 0); // Stock
+
+            if (stockChart) {
+                stockChart.data.labels = labels;
+                stockChart.data.datasets[0].data = stocks;
+                stockChart.update();
+            } else {
+                const ctx = document.getElementById('stockChart').getContext('2d');
+                stockChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Stock (Kg)',
+                            data: stocks,
+                            backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                            borderColor: '#3b82f6',
+                            borderWidth: 1,
+                            borderRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Refresh data setiap 10 detik
+        setInterval(updateDashboard, 10000);
+        
+        // Jalankan saat load awal
+        updateDashboard();
+    </script>
+</body>
+</html>
