@@ -50,12 +50,11 @@
                             <th>No PBI</th>
                             <th>Stock (Kg)</th>
                             <th>Output Outlet</th>
-                            <th>Target Aktif (Kg)</th>
                             <th>Aktual (Kg)</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="9" class="py-10 text-gray-500">Memuat data dari Google Sheets...</td></tr>
+                        <tr><td colspan="8" class="py-10 text-gray-500">Memuat data dari Google Sheets...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -63,8 +62,9 @@
     </div>
 
     <script>
-        // GANTI INI DENGAN URL CSV ANDA
-        const CSV_URL = '141uuIOYNPmIYjI6OvCHRbMOOXrWtfFVfAisAis0zL-0';
+        // URL CSV yang benar (Ganti ID ini dengan ID spreadsheet Anda yang sudah di-publish ke web sebagai CSV)
+        const SHEET_ID = '141uuIOYNPmIYjI6OvCHRbMOOXrWtfFVfAisAis0zL-0';
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=result_flowmeter`;
         
         let stockChart;
 
@@ -73,9 +73,9 @@
                 const response = await fetch(CSV_URL);
                 const data = await response.text();
                 
-                // Parsing CSV (Ambil Header + 5 Baris Pertama Data)
-                const rows = data.split('\n').filter(r => r.trim() !== '');
-                const content = rows.slice(1, 6).map(row => row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/));
+                // Parsing CSV dan ambil 5 baris data pertama (setelah header)
+                const rows = data.split('\n').map(row => row.split(',').map(cell => cell.replace(/"/g, '')));
+                const content = rows.slice(1, 6); 
 
                 renderTable(content);
                 renderChart(content);
@@ -89,27 +89,18 @@
             tbody.innerHTML = '';
 
             data.forEach(row => {
+                // Pemetaan berdasarkan gambar Google Sheets Anda
                 tbody.innerHTML += `
                     <tr class="hover:bg-gray-800 transition">
-                        <td>${row[0] || '-'}</td>
-                        <td class="text-blue-300 font-bold">${row[1] || '-'}</td>
-                        <td>${row[2] || '-'}</td>
-                        <td>${row[3] || '-'}</td>
-                        <td>${row[4] || '-'}</td>
-                        <td class="text-yellow-500 font-bold">${parseFloat(row[5]).toLocaleString('id-ID', {minimumFractionDigits: 2})}</td>
-                        <td>${row[6] || '-'}</td>
-                        <td class="text-green-500">${row[7] || '0.00'}</td>
-                        <td class="text-green-500 font-bold">${row[8] || '0.00'}</td>
-                    </tr>
+                        <td>${row[1] || '-'}</td> <td class="text-blue-300 font-bold">${row[5] || '-'}</td> <td>${row[9] || '-'}</td> <td>${row[6] || '-'}</td> <td>${row[7] || '-'}</td> <td class="text-yellow-500 font-bold">${parseFloat(row[11] || 0).toLocaleString('id-ID', {minimumFractionDigits: 2})}</td> <td>${row[4] || '-'}</td> <td class="text-green-500 font-bold">${row[12] || '0.00'}</td> </tr>
                 `;
             });
         }
 
         function renderChart(data) {
-            const labels = data.map(row => `${row[1]} (${row[2]})`); // Nama + Material
-            const stockValues = data.map(row => parseFloat(row[5]) || 0);
+            const labels = data.map(row => `${row[5]}`); // Nama_ID
+            const stockValues = data.map(row => parseFloat(row[11]) || 0);
             
-            // Warna-warna bar (sesuai gambar)
             const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
             if (stockChart) stockChart.destroy();
@@ -123,14 +114,14 @@
                         label: 'Stock Bahan (Kg)',
                         data: stockValues,
                         backgroundColor: colors.slice(0, data.length),
-                        barThickness: 120
+                        barThickness: 80
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { 
-                        legend: { display: true, labels: { color: '#8b949e' } } 
+                        legend: { display: false } 
                     },
                     scales: {
                         y: { 
@@ -140,14 +131,13 @@
                         },
                         x: { 
                             grid: { display: false }, 
-                            ticks: { color: '#8b949e', font: { size: 10 } } 
+                            ticks: { color: '#8b949e', font: { size: 11 } } 
                         }
                     }
                 }
             });
         }
 
-        // Refresh setiap 10 detik
         setInterval(updateDashboard, 10000);
         updateDashboard();
     </script>
