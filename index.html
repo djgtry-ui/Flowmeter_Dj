@@ -3,103 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Realtime Status Flowmeter - Monitoring</title>
+    <title>Status Flowmeter - Result Data</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     
     <style>
-        body { background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        .card-container { background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; }
-        .table-custom { width: 100%; border-collapse: collapse; font-size: 11px; }
-        .table-custom th { background-color: #21262d; color: #f0f6fc; padding: 12px; border: 1px solid #30363d; text-align: center; white-space: nowrap; }
-        .table-custom td { padding: 10px; border: 1px solid #30363d; text-align: center; }
-        .btn-nav { padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 14px; display: flex; align-items: center; transition: 0.2s; }
-        .btn-nav:hover { opacity: 0.8; transform: translateY(-1px); }
+        /* Mengintegrasikan style2.css Anda */
+        :root { --color-primary: #3b82f6; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #0f2a76 50%, #0f172a 100%);
+            margin: 0;
+        }
+        .page-content { min-height: 100vh; }
+        .table-dark { color: #d1d5db; border-collapse: collapse; width: 100%; }
+        .table-dark th {
+            background-color: #121212f9; color: white; padding: 8px;
+            text-align: center; border-bottom: 2px solid var(--color-primary); font-size: 0.75rem;
+        }
+        .table-dark td {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 8px;
+            font-size: 0.75rem; white-space: nowrap; text-align: center;
+        }
+        .table-dark tbody tr:hover { background-color: rgba(5, 6, 8, 0.2); }
+        .table-body-scroll { max-height: 50vh; overflow-y: auto; background-color: #1f2937; }
+        .col-w-id { width: 60px; }
+        .col-w-name { width: 100px; }
+        .col-w-stock { width: 90px; }
+        .col-w-outlet-name { width: 160px; }
+        .col-w-flow-active { width: 100px; }
+        .text-active-green { color: #6ee7b7; }
+        .stock-yellow-text { color: #facc15; }
     </style>
 </head>
-<body class="p-4 md:p-6">
 
-    <div class="max-w-[98%] mx-auto">
-        <div class="text-center mb-6">
-            <h1 class="text-3xl font-bold text-white mb-2">Realtime Status Flowmeter</h1>
-            <p class="text-blue-400 text-sm tracking-widest">DATA SINKRONISASI TERKINI DARI MESIN FLOWMETER</p>
-        </div>
-
-        <div class="flex justify-end gap-3 mb-6">
-            <button class="btn-nav bg-[#6366f1] text-white"><i class="fas fa-exchange-alt mr-2"></i> Transaksi</button>
-            <button class="btn-nav bg-[#4b5563] text-white"><i class="fas fa-history mr-2"></i> History</button>
-            <button class="btn-nav bg-[#ef4444] text-white"><i class="fas fa-sign-out-alt mr-2"></i> Logout</button>
-        </div>
-
-        <div class="card-container p-6 mb-8">
-            <h3 class="text-sm font-bold text-white mb-5 border-l-4 border-blue-500 pl-3 uppercase">Grafik Stock Bahan Mesin (5 Mesin Aktif)</h3>
-            <div style="height: 380px; width: 100%;">
-                <canvas id="stockChart"></canvas>
+<body>
+    <div class="page-content py-8">
+        <div class="container mx-auto px-4 flex flex-col">
+            
+            <div class="text-center mb-6">
+                <h2 class="text-3xl font-bold text-white mb-1">Realtime Status Flowmeter</h2>
+                <p class="text-sm text-blue-200">Data Sinkronisasi Terkini dari Mesin Flowmeter</p>
             </div>
-        </div>
 
-        <div class="card-container overflow-hidden">
-            <div class="p-4 bg-[#21262d] text-sm font-bold border-b border-blue-500 text-white flex justify-between items-center">
-                <span>TABEL RESULT FLOWMETER</span>
-                <span id="updateTime" class="text-xs font-normal text-gray-400 italic font-mono">Menghubungkan...</span>
+            <div class="flex justify-end mb-4 space-x-2">
+                <a href="#" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded text-sm font-medium text-white whitespace-nowrap">🏠 Transaksi </a>
+                <a href="#" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-sm font-medium text-white whitespace-nowrap">📚 History</a>
+                <a href="#" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm font-medium text-white whitespace-nowrap">🔓 Logout</a>
             </div>
-            <div class="overflow-x-auto">
-                <table class="table-custom">
-                    <thead>
-                        <tr>
-                            <th>ID MESIN</th>
-                            <th>NAMA MESIN</th>
-                            <th>MATERIAL</th>
-                            <th>NO PO</th>
-                            <th>NO PBI</th>
-                            <th>STOCK (KG)</th>
-                            <th>OUTPUT OUTLET</th>
-                            <th>TARGET AKTIF (KG)</th>
-                            <th>AKTUAL (KG)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                        <tr><td colspan="9" class="py-20 text-gray-500"><i class="fas fa-circle-notch fa-spin mr-2"></i> Mengolah data outlet...</td></tr>
-                    </tbody>
-                </table>
+
+            <div class="bg-gray-900 rounded-lg border border-white/20 shadow-lg mb-8 p-4">
+                <div class="text-white font-semibold border-b border-blue-500 pb-2 mb-4 text-sm">
+                    Grafik Stock Bahan Mesin (<span id="totalMachines">0</span> Mesin Aktif)
+                </div>
+                <div class="relative h-96">
+                    <canvas id="stockChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 shadow-lg flex-1 overflow-hidden">
+                <div class="p-3 bg-gray-700/50 text-white font-semibold border-b border-blue-500 rounded-t-lg text-sm">
+                    Tabel Result Flowmeter 
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="table-dark mb-0">
+                        <thead>
+                            <tr>
+                                <th class="col-w-id">ID Mesin</th> 
+                                <th class="col-w-name">Nama Mesin</th>
+                                <th class="col-w-name">Material</th>
+                                <th class="col-w-name">No PO</th> 
+                                <th class="col-w-name">No PBI</th>
+                                <th class="col-w-stock">Stock (Kg)</th> 
+                                <th class="col-w-outlet-name">Output Outlet</th>
+                                <th class="col-w-flow-active text-active-green">Target Aktif (Kg)</th>
+                                <th class="col-w-flow-active text-active-green">Aktual (Kg)</th>
+                            </tr>
+                        </thead>
+                    </table>
+                    
+                    <div class="table-body-scroll"> 
+                        <table class="table-dark mt-0">
+                            <tbody id="tableBody">
+                                <tr><td colspan="9" class="text-center py-10 text-white/50 italic">Menghubungkan ke server...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         const SHEET_ID = '141uuIOYNPmIYjI6OvCHRbMOOXrWtfFVfAisAis0zL-0';
-        const SHEET_NAME = 'result_flowmeter';
-        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&sheet=${SHEET_NAME}&t=${new Date().getTime()}`;
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&sheet=result_flowmeter&t=${new Date().getTime()}`;
         
         let stockChart;
+        const barColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-        // FUNGSI PENTING: Mengonversi data string menjadi format angka Indonesia (18.012,39)
-        function formatAngkaIndo(val) {
+        // Fungsi format angka 18.012,39
+        function formatIndo(val) {
             if (!val) return "0,00";
-            // Bersihkan format jika input berupa "18012.39" atau "18.012,39"
-            let cleanVal = val.toString().replace(/\./g, '').replace(',', '.');
-            let num = parseFloat(cleanVal);
-            if (isNaN(num)) return "0,00";
-            return num.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            let strVal = val.toString().trim();
+            if (strVal.includes(',') && !strVal.includes('.')) strVal = strVal.replace(',', '.');
+            let num = parseFloat(strVal);
+            return isNaN(num) ? "0,00" : num.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         async function updateDashboard() {
             try {
                 const response = await fetch(CSV_URL);
                 const csvText = await response.text();
-                
                 const rows = csvText.split(/\r?\n/).filter(row => row.trim() !== "").map(row => {
                     return row.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(cell => cell.replace(/^"|"$/g, '').trim());
                 });
 
-                const content = rows.slice(1, 6); // Ambil 5 data teratas
-
+                const content = rows.slice(1, 6); 
+                document.getElementById('totalMachines').innerText = content.length;
                 renderTable(content);
                 renderChart(content);
-                document.getElementById('updateTime').innerText = "LAST SYNC: " + new Date().toLocaleTimeString();
             } catch (error) {
-                console.error("Error mengambil data:", error);
+                console.error("Data error:", error);
             }
         }
 
@@ -108,44 +134,38 @@
             tbody.innerHTML = '';
 
             data.forEach(row => {
-                const aktifOutlet = parseInt(row[4]) || 0; // Kolom E (Aktif_Outlet)
-                let outletNama = "-";
-                let targetAktif = "0,00";
+                const aktifOutlet = parseInt(row[4]) || 0;
+                let outletNama = "-", targetAktif = "0,00";
 
-                // LOGIKA OUTLET DINAMIS (Index kolom berdasarkan urutan A, B, C...)
-                // Outlet 1 Nama di kolom P (Index 15), Target di kolom Q (Index 16)
-                // Setiap blok outlet berjarak 9 kolom
                 if (aktifOutlet > 0) {
                     const baseIndex = 15 + ((aktifOutlet - 1) * 9);
                     outletNama = row[baseIndex] || `Outlet ${aktifOutlet}`;
-                    targetAktif = formatAngkaIndo(row[baseIndex + 1]);
+                    targetAktif = formatIndo(row[baseIndex + 1]);
                 }
 
                 tbody.innerHTML += `
-                    <tr class="hover:bg-gray-800 transition border-b border-[#30363d]">
-                        <td class="font-mono text-gray-400">${row[1] || '-'}</td>
-                        <td class="text-blue-300 font-bold">${row[5] || '-'}</td>
-                        <td class="text-gray-300">${row[9] || '-'}</td>
-                        <td class="text-gray-400">${row[6] || '-'}</td>
-                        <td class="text-gray-400">${row[7] || '-'}</td>
-                        <td class="text-yellow-500 font-bold">${formatAngkaIndo(row[11])}</td>
-                        <td class="text-indigo-300 font-semibold">${outletNama}</td>
-                        <td class="text-green-400 font-bold">${targetAktif}</td>
-                        <td class="text-green-500 font-bold">${formatAngkaIndo(row[12])}</td>
+                    <tr>
+                        <td class="col-w-id opacity-50">${row[1]}</td>
+                        <td class="col-w-name text-blue-400 font-bold">${row[5]}</td>
+                        <td class="col-w-name">${row[9]}</td>
+                        <td class="col-w-name opacity-70">${row[6]}</td>
+                        <td class="col-w-name opacity-70">${row[7]}</td>
+                        <td class="col-w-stock stock-yellow-text font-bold">${formatIndo(row[11])}</td>
+                        <td class="col-w-outlet-name text-indigo-300 font-semibold">${outletNama}</td>
+                        <td class="col-w-flow-active text-active-green font-bold">${targetAktif}</td>
+                        <td class="col-w-flow-active text-active-green font-bold">${formatIndo(row[12])}</td>
                     </tr>
                 `;
             });
         }
 
         function renderChart(data) {
-            const labels = data.map(row => `${row[5]} (${row[9]})`);
+            const labels = data.map(row => row[5]);
             const stockValues = data.map(row => {
-                let val = row[11] ? row[11].replace(/\./g, '').replace(',', '.') : '0';
+                let val = row[11] ? row[11].replace(',', '.') : '0';
                 return parseFloat(val) || 0;
             });
             
-            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-
             if (stockChart) stockChart.destroy();
             const ctx = document.getElementById('stockChart').getContext('2d');
             stockChart = new Chart(ctx, {
@@ -155,40 +175,32 @@
                     datasets: [{
                         label: 'Stock Bahan (Kg)',
                         data: stockValues,
-                        backgroundColor: colors,
-                        borderRadius: 5,
-                        barPercentage: 0.5,
-                        categoryPercentage: 0.8
+                        backgroundColor: barColors.slice(0, data.length),
+                        borderRadius: 4,
+                        barPercentage: 0.5
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { display: true, labels: { color: '#8b949e', font: { size: 11 } } }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
                         y: { 
-                            beginAtZero: true, 
-                            grid: { color: '#30363d' }, 
+                            title: { display: true, text: 'Stock (Kg)', color: '#9ca3af' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }, 
                             ticks: { 
-                                color: '#8b949e',
-                                callback: function(value) {
-                                    return value.toLocaleString('id-ID'); // Titik ribuan di grafik
-                                }
+                                color: '#9ca3af',
+                                callback: function(value) { return value.toLocaleString('id-ID'); }
                             } 
                         },
-                        x: { 
-                            grid: { display: false }, 
-                            ticks: { color: '#8b949e', font: { size: 10 } } 
-                        }
+                        x: { ticks: { color: '#9ca3af' }, grid: { display: false } }
                     }
                 }
             });
         }
 
         updateDashboard();
-        setInterval(updateDashboard, 15000); // Sinkronisasi otomatis setiap 15 detik
+        setInterval(updateDashboard, 15000);
     </script>
 </body>
 </html>
