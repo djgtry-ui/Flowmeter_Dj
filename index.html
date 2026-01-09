@@ -3,63 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Flowmeter Pro</title>
+    <title>Realtime Status Flowmeter - Monitoring</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
     <style>
-        body { background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', Tahoma, sans-serif; }
         .card-container { background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; }
         .table-custom { width: 100%; border-collapse: collapse; font-size: 11px; }
-        .table-custom th { background-color: #21262d; color: #f0f6fc; padding: 10px; border: 1px solid #30363d; text-align: center; white-space: nowrap; }
-        .table-custom td { padding: 8px; border: 1px solid #30363d; text-align: center; }
-        .btn-nav { padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 13px; display: flex; align-items: center; }
+        .table-custom th { background-color: #21262d; color: #f0f6fc; padding: 12px; border: 1px solid #30363d; text-align: center; white-space: nowrap; }
+        .table-custom td { padding: 10px; border: 1px solid #30363d; text-align: center; }
+        .btn-nav { padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 14px; display: flex; align-items: center; transition: 0.2s; }
+        .btn-nav:hover { opacity: 0.8; transform: translateY(-1px); }
     </style>
 </head>
-<body class="p-4">
+<body class="p-4 md:p-6">
 
-    <div class="max-w-[95%] mx-auto">
+    <div class="max-w-[98%] mx-auto">
         <div class="text-center mb-6">
-            <h1 class="text-2xl font-bold text-white mb-1">Realtime Status Flowmeter</h1>
-            <p class="text-blue-400 text-xs">Data Sinkronisasi Terkini dari Mesin Flowmeter</p>
+            <h1 class="text-3xl font-bold text-white mb-2">Realtime Status Flowmeter</h1>
+            <p class="text-blue-400 text-sm tracking-widest">DATA SINKRONISASI TERKINI DARI MESIN FLOWMETER</p>
         </div>
 
-        <div class="flex justify-end gap-2 mb-6">
+        <div class="flex justify-end gap-3 mb-6">
             <button class="btn-nav bg-[#6366f1] text-white"><i class="fas fa-exchange-alt mr-2"></i> Transaksi</button>
             <button class="btn-nav bg-[#4b5563] text-white"><i class="fas fa-history mr-2"></i> History</button>
             <button class="btn-nav bg-[#ef4444] text-white"><i class="fas fa-sign-out-alt mr-2"></i> Logout</button>
         </div>
 
-        <div class="card-container p-4 mb-6">
-            <h3 class="text-xs font-bold text-white mb-4 border-b border-blue-500 pb-2">Grafik Stock Bahan Mesin (5 Mesin Aktif)</h3>
-            <div style="height: 320px;">
+        <div class="card-container p-6 mb-8">
+            <h3 class="text-sm font-bold text-white mb-5 border-l-4 border-blue-500 pl-3 uppercase">Grafik Stock Bahan Mesin (5 Mesin Aktif)</h3>
+            <div style="height: 380px; width: 100%;">
                 <canvas id="stockChart"></canvas>
             </div>
         </div>
 
         <div class="card-container overflow-hidden">
-            <div class="p-3 bg-[#21262d] text-xs font-bold border-b border-blue-500 text-white flex justify-between">
-                <span>Tabel Result Flowmeter</span>
-                <span id="updateTime" class="italic text-gray-400">Menyinkronkan...</span>
+            <div class="p-4 bg-[#21262d] text-sm font-bold border-b border-blue-500 text-white flex justify-between items-center">
+                <span>TABEL RESULT FLOWMETER</span>
+                <span id="updateTime" class="text-xs font-normal text-gray-400 italic font-mono">Menghubungkan...</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="table-custom">
                     <thead>
                         <tr>
-                            <th>ID Mesin</th>
-                            <th>Nama Mesin</th>
-                            <th>Material</th>
-                            <th>No PO</th>
-                            <th>No PBI</th>
-                            <th>Stock (Kg)</th>
-                            <th>Output Outlet</th>
-                            <th>Target Aktif (Kg)</th>
-                            <th>Aktual (Kg)</th>
+                            <th>ID MESIN</th>
+                            <th>NAMA MESIN</th>
+                            <th>MATERIAL</th>
+                            <th>NO PO</th>
+                            <th>NO PBI</th>
+                            <th>STOCK (KG)</th>
+                            <th>OUTPUT OUTLET</th>
+                            <th>TARGET AKTIF (KG)</th>
+                            <th>AKTUAL (KG)</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="9" class="py-10 text-center">Memproses data outlet...</td></tr>
+                        <tr><td colspan="9" class="py-20 text-gray-500"><i class="fas fa-circle-notch fa-spin mr-2"></i> Mengolah data outlet...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -68,24 +69,37 @@
 
     <script>
         const SHEET_ID = '141uuIOYNPmIYjI6OvCHRbMOOXrWtfFVfAisAis0zL-0';
-        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&sheet=result_flowmeter&t=${new Date().getTime()}`;
+        const SHEET_NAME = 'result_flowmeter';
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&sheet=${SHEET_NAME}&t=${new Date().getTime()}`;
         
         let stockChart;
+
+        // FUNGSI PENTING: Mengonversi data string menjadi format angka Indonesia (18.012,39)
+        function formatAngkaIndo(val) {
+            if (!val) return "0,00";
+            // Bersihkan format jika input berupa "18012.39" atau "18.012,39"
+            let cleanVal = val.toString().replace(/\./g, '').replace(',', '.');
+            let num = parseFloat(cleanVal);
+            if (isNaN(num)) return "0,00";
+            return num.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
 
         async function updateDashboard() {
             try {
                 const response = await fetch(CSV_URL);
                 const csvText = await response.text();
+                
                 const rows = csvText.split(/\r?\n/).filter(row => row.trim() !== "").map(row => {
                     return row.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(cell => cell.replace(/^"|"$/g, '').trim());
                 });
 
-                const content = rows.slice(1, 6); 
+                const content = rows.slice(1, 6); // Ambil 5 data teratas
+
                 renderTable(content);
                 renderChart(content);
-                document.getElementById('updateTime').innerText = "Terakhir Update: " + new Date().toLocaleTimeString();
+                document.getElementById('updateTime').innerText = "LAST SYNC: " + new Date().toLocaleTimeString();
             } catch (error) {
-                console.error(error);
+                console.error("Error mengambil data:", error);
             }
         }
 
@@ -98,36 +112,33 @@
                 let outletNama = "-";
                 let targetAktif = "0,00";
 
-                // LOGIKA DINAMIS OUTLET (Berdasarkan indeks kolom Google Sheet Anda)
-                // Indeks kolom dimulai dari 0 (A=0, B=1, dst)
-                // Outlet 1 Nama di kolom P (15), Target di kolom Q (16)
-                // Outlet 2 Nama di kolom Y (24), Target di kolom Z (25)
-                // Setiap outlet berjarak 9 kolom
+                // LOGIKA OUTLET DINAMIS (Index kolom berdasarkan urutan A, B, C...)
+                // Outlet 1 Nama di kolom P (Index 15), Target di kolom Q (Index 16)
+                // Setiap blok outlet berjarak 9 kolom
                 if (aktifOutlet > 0) {
                     const baseIndex = 15 + ((aktifOutlet - 1) * 9);
                     outletNama = row[baseIndex] || `Outlet ${aktifOutlet}`;
-                    targetAktif = row[baseIndex + 1] || "0,00";
+                    targetAktif = formatAngkaIndo(row[baseIndex + 1]);
                 }
 
                 tbody.innerHTML += `
-                    <tr class="hover:bg-gray-800 transition">
-                        <td>${row[1]}</td>
-                        <td class="text-blue-300 font-bold">${row[5]}</td>
-                        <td>${row[9]}</td>
-                        <td>${row[6]}</td>
-                        <td>${row[7]}</td>
-                        <td class="text-yellow-500 font-bold">${row[11]}</td>
-                        <td class="text-gray-300 font-semibold">${outletNama}</td>
+                    <tr class="hover:bg-gray-800 transition border-b border-[#30363d]">
+                        <td class="font-mono text-gray-400">${row[1] || '-'}</td>
+                        <td class="text-blue-300 font-bold">${row[5] || '-'}</td>
+                        <td class="text-gray-300">${row[9] || '-'}</td>
+                        <td class="text-gray-400">${row[6] || '-'}</td>
+                        <td class="text-gray-400">${row[7] || '-'}</td>
+                        <td class="text-yellow-500 font-bold">${formatAngkaIndo(row[11])}</td>
+                        <td class="text-indigo-300 font-semibold">${outletNama}</td>
                         <td class="text-green-400 font-bold">${targetAktif}</td>
-                        <td class="text-green-500 font-bold">${row[12] || '0.00'}</td>
+                        <td class="text-green-500 font-bold">${formatAngkaIndo(row[12])}</td>
                     </tr>
                 `;
             });
         }
 
         function renderChart(data) {
-            // Nama grafik lebih lengkap (Nama Mesin + Material) sesuai image_e6569f.png
-            const labels = data.map(row => `${row[5]} (${row[9]})`); 
+            const labels = data.map(row => `${row[5]} (${row[9]})`);
             const stockValues = data.map(row => {
                 let val = row[11] ? row[11].replace(/\./g, '').replace(',', '.') : '0';
                 return parseFloat(val) || 0;
@@ -145,7 +156,8 @@
                         label: 'Stock Bahan (Kg)',
                         data: stockValues,
                         backgroundColor: colors,
-                        barPercentage: 0.6, // Mengatur lebar bar agar pas (tidak terlalu kurus/gemuk)
+                        borderRadius: 5,
+                        barPercentage: 0.5,
                         categoryPercentage: 0.8
                     }]
                 },
@@ -153,18 +165,22 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { 
-                        legend: { display: true, labels: { color: '#8b949e', font: { size: 10 } } } 
+                        legend: { display: true, labels: { color: '#8b949e', font: { size: 11 } } }
                     },
                     scales: {
                         y: { 
                             beginAtZero: true, 
-                            max: 20000, // Menyesuaikan skala 20.000 seperti di gambar
                             grid: { color: '#30363d' }, 
-                            ticks: { color: '#8b949e', stepSize: 2000 } 
+                            ticks: { 
+                                color: '#8b949e',
+                                callback: function(value) {
+                                    return value.toLocaleString('id-ID'); // Titik ribuan di grafik
+                                }
+                            } 
                         },
                         x: { 
                             grid: { display: false }, 
-                            ticks: { color: '#8b949e', font: { size: 9 } } 
+                            ticks: { color: '#8b949e', font: { size: 10 } } 
                         }
                     }
                 }
@@ -172,7 +188,7 @@
         }
 
         updateDashboard();
-        setInterval(updateDashboard, 10000);
+        setInterval(updateDashboard, 15000); // Sinkronisasi otomatis setiap 15 detik
     </script>
 </body>
 </html>
