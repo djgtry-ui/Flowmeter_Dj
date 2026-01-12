@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HMI Flowmeter Pro - Final System</title>
+    <title>HMI Flowmeter Pro - Compact View</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -11,22 +11,18 @@
         body { background: #0b1437; color: #d1d5db; font-family: 'Plus Jakarta Sans', sans-serif; }
         .card-custom { background: #111c44; border: 1px solid #1b254b; border-radius: 12px; }
         
-        /* Tombol Mesin Utama */
         .btn-machine { background: #1a2244; border: 1px solid #2d3748; padding: 10px; border-radius: 8px; font-size: 11px; font-weight: 800; transition: 0.2s; cursor: pointer; }
         .btn-machine.active { background: #3b82f6; color: white; border-color: #60a5fa; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
         
-        /* Tombol Outlet */
         .outlet-btn { padding: 8px 16px; border-radius: 6px; font-size: 11px; font-weight: 700; transition: 0.2s; border: 1px solid #2d3748; background: #1a2244; color: #94a3b8; }
-        
-        /* LOGIKA WARNA KUNING: Aktif di PLC (Kolom E) */
         .outlet-running { background: #facc15 !important; color: #000 !important; border-color: #eab308 !important; font-weight: 900; box-shadow: 0 0 15px rgba(250, 204, 21, 0.5); }
-        
-        /* LOGIKA BORDER BIRU: Dipilih User untuk Monitor */
         .outlet-selected { border: 2px solid #3b82f6 !important; color: white; }
 
         .btn-ctrl { font-weight: 900; text-transform: uppercase; font-size: 10px; padding: 12px 10px; border-radius: 10px; transition: all 0.2s; border-bottom: 4px solid rgba(0,0,0,0.3); color: white; }
         .btn-ctrl:active { transform: translateY(2px); border-bottom-width: 2px; }
         .val-mono { font-family: 'JetBrains Mono', monospace; }
+
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body class="p-6">
@@ -47,7 +43,6 @@
                     <a href="index.html" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm font-medium text-white shadow-lg flex items-center transition">
                         🏠 Dashboard
                     </a>
-
                     <a href="history_flowmeter.html" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm font-medium text-white shadow-lg flex items-center transition">
                         📚 History
                     </a>
@@ -80,13 +75,15 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-6">
-                    <div class="card-custom p-8 text-center border-t-2 border-blue-500/20">
-                        <p class="text-[11px] text-slate-500 font-bold uppercase mb-4 tracking-widest">Set Target (Kg)</p>
-                        <div id="d-target" class="text-6xl font-black text-white val-mono">0.00</div>
+                    <div class="card-custom p-6 text-center border-t-2 border-blue-500/20">
+                        <p class="text-[10px] text-slate-500 font-bold uppercase mb-2 tracking-widest">Set Target (Kg)</p>
+                        <input type="number" id="i-target" 
+                            class="bg-transparent text-3xl font-black text-white val-mono text-center w-full focus:outline-none focus:text-blue-400" 
+                            value="0.00" step="0.01" onchange="control('UPDATE_TARGET', this.value)">
                     </div>
-                    <div class="card-custom p-8 text-center bg-emerald-500/5 border-t-2 border-emerald-500/20">
-                        <p class="text-[11px] text-emerald-500/50 font-bold uppercase mb-4 tracking-widest">Actual Flow (Kg)</p>
-                        <div id="d-aktual" class="text-6xl font-black text-emerald-500 val-mono">0.00</div>
+                    <div class="card-custom p-6 text-center bg-emerald-500/5 border-t-2 border-emerald-500/20">
+                        <p class="text-[10px] text-emerald-500/50 font-bold uppercase mb-2 tracking-widest">Actual Flow (Kg)</p>
+                        <div id="d-aktual" class="text-3xl font-black text-emerald-500 val-mono">0.00</div>
                     </div>
                 </div>
 
@@ -118,6 +115,7 @@
     <script>
         const SHEET_ID = '141uuIOYNPmIYjI6OvCHRbMOOXrWtfFVfAisAis0zL-0';
         const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&sheet=result_flowmeter`;
+        const WEB_APP_URL = "ISI_URL_WEB_APP_ANDA_DISINI";
         
         let activeMachineID = '1'; 
         let userSelectedIdx = 1; 
@@ -168,11 +166,13 @@
             }
 
             const selBaseIdx = 15 + ((userSelectedIdx - 1) * 9);
-            const target = parseFloat(data[selBaseIdx + 1]?.replace(',', '.') || 0);
+            const targetVal = parseFloat(data[selBaseIdx + 1]?.replace(',', '.') || 0);
             const aktual = parseFloat(data[12]?.replace(',', '.') || 0);
-            const progress = target > 0 ? Math.min((aktual/target)*100, 100) : 0;
+            const progress = targetVal > 0 ? Math.min((aktual/targetVal)*100, 100) : 0;
 
-            document.getElementById('d-target').innerText = formatNum(target);
+            if (document.activeElement !== document.getElementById('i-target')) {
+                document.getElementById('i-target').value = targetVal.toFixed(2);
+            }
             document.getElementById('d-aktual').innerText = formatNum(aktual);
             document.getElementById('d-route').innerText = data[selBaseIdx] || "--";
             document.getElementById('d-sysid').innerText = userSelectedIdx;
@@ -180,12 +180,23 @@
             document.getElementById('progress-bar').style.width = progress + "%";
         }
 
+        async function control(type, extraVal = null) {
+            if (type === 'RESET') {
+                document.getElementById('i-target').value = "0.00";
+                extraVal = 0;
+            }
+            
+            try {
+                let url = `${WEB_APP_URL}?action=${type}&machineId=${activeMachineID}&outletIdx=${userSelectedIdx}`;
+                if (extraVal !== null) url += `&value=${extraVal}`;
+                await fetch(url, { mode: 'no-cors' });
+                console.log(`Command ${type} sent`);
+                setTimeout(fetchData, 500);
+            } catch (e) { console.error("Error:", e); }
+        }
+
         const mList = document.getElementById('machineList');
-        const machines = [
-            {id: '1', name: 'TH SMT'}, {id: '2', name: 'TH P-01'}, {id: '3', name: 'TH V-09'},
-            {id: '4', name: 'TH P-05'}, {id: '5', name: 'TH WF'}
-        ];
-        
+        const machines = [{id:'1', name:'TH SMT'}, {id:'2', name:'TH P-01'}, {id:'3', name:'TH V-09'}, {id:'4', name:'TH P-05'}, {id:'5', name:'TH WF'}];
         machines.forEach(m => {
             const btn = document.createElement('button');
             btn.className = `btn-machine ${m.id === activeMachineID ? 'active' : ''}`;
@@ -198,8 +209,6 @@
             };
             mList.appendChild(btn);
         });
-
-        function control(type) { alert(`Sinyal ${type} dikirim untuk ID Outlet: ${userSelectedIdx}`); }
 
         fetchData();
         setInterval(fetchData, 3000);
