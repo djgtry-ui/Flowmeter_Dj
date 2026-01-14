@@ -3,94 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Status Flowmeter - Result Data</title>
+    <title>Status Flowmeter - Monitoring Propan</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     
     <style>
-        /* Mengintegrasikan style2.css Anda */
         :root { --color-primary: #3b82f6; }
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #0f172a 0%, #0f2a76 50%, #0f172a 100%);
             margin: 0;
+            color: #d1d5db;
         }
-        .page-content { min-height: 100vh; }
         .table-dark { color: #d1d5db; border-collapse: collapse; width: 100%; }
         .table-dark th {
-            background-color: #121212f9; color: white; padding: 8px;
+            background-color: #121212f9; color: white; padding: 10px;
             text-align: center; border-bottom: 2px solid var(--color-primary); font-size: 0.75rem;
+            text-transform: uppercase;
         }
         .table-dark td {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 10px;
             font-size: 0.75rem; white-space: nowrap; text-align: center;
         }
-        .table-dark tbody tr:hover { background-color: rgba(5, 6, 8, 0.2); }
-        .table-body-scroll { max-height: 50vh; overflow-y: auto; background-color: #1f2937; }
-        .col-w-id { width: 60px; }
-        .col-w-name { width: 100px; }
-        .col-w-stock { width: 90px; }
-        .col-w-outlet-name { width: 160px; }
-        .col-w-flow-active { width: 100px; }
+        .table-dark tbody tr:hover { background-color: rgba(59, 130, 246, 0.1); transition: 0.2s; }
+        .table-body-scroll { max-height: 45vh; overflow-y: auto; background-color: rgba(31, 41, 55, 0.4); }
+        
+        .table-body-scroll::-webkit-scrollbar { width: 6px; }
+        .table-body-scroll::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+
         .text-active-green { color: #6ee7b7; }
-        .stock-yellow-text { color: #facc15; }
+        .stock-yellow { color: #facc15; }
     </style>
 </head>
 
-<body>
-    <div class="page-content py-8">
-        <div class="container mx-auto px-4 flex flex-col">
+<body class="p-4 md:p-8">
+    <div class="container mx-auto">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-white mb-2">Realtime Status Flowmeter</h1>
+            <p class="text-blue-300 opacity-80 uppercase tracking-widest text-[10px]">Monitoring System Data Result</p>
+        </div>
+
+        <div class="flex justify-end mb-6 space-x-3">
+            <a href="transaksi_flowmeter.html" class="bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🏠 TRANSAKSI</a>
+            <a href="history_flowmeter.html" class="bg-slate-600 hover:bg-slate-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">📚 HISTORY</a>
+            <a href="#" class="bg-red-600 hover:bg-red-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🔓 LOGOUT</a>
+        </div>
+
+        <div class="bg-gray-900/90 rounded-xl border border-white/10 shadow-2xl p-5 mb-8">
+            <div class="flex items-center justify-between mb-6 border-b border-blue-500/30 pb-3">
+                <h2 class="text-white font-semibold text-sm flex items-center uppercase italic">
+                    <i class="fa-solid fa-chart-column mr-3 text-blue-400"></i>
+                    Grafik Stock Bahan Mesin (<span id="totalMachines">0</span> Aktif)
+                </h2>
+            </div>
+            <div class="h-80 w-full">
+                <canvas id="stockChart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-gray-900/90 rounded-xl border border-white/10 shadow-2xl overflow-hidden">
+            <div class="p-4 bg-gray-800/50 border-b border-blue-500/30">
+                <h2 class="text-white font-semibold flex items-center text-xs uppercase italic">
+                    <i class="fa-solid fa-table-list mr-3 text-blue-400"></i>
+                    Tabel Monitoring Result
+                </h2>
+            </div>
             
-            <div class="text-center mb-6">
-                <h2 class="text-3xl font-bold text-white mb-1">Realtime Status Flowmeter</h2>
-                <p class="text-sm text-blue-200">Data Sinkronisasi Terkini dari Mesin Flowmeter</p>
-            </div>
-
-            <div class="flex justify-end mb-4 space-x-2">
-                <a href="transaksi_flowmeter.html" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded text-sm font-medium text-white whitespace-nowrap">🏠 Transaksi </a>
-                <a href="history_flowmeter.html" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-sm font-medium text-white whitespace-nowrap">📚 History</a>
-                <a href="#" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm font-medium text-white whitespace-nowrap">🔓 Logout</a>
-            </div>
-
-            <div class="bg-gray-900 rounded-lg border border-white/20 shadow-lg mb-8 p-4">
-                <div class="text-white font-semibold border-b border-blue-500 pb-2 mb-4 text-sm">
-                    Grafik Stock Bahan Mesin (<span id="totalMachines">0</span> Mesin Aktif)
-                </div>
-                <div class="relative h-96">
-                    <canvas id="stockChart"></canvas>
-                </div>
-            </div>
-
-            <div class="bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 shadow-lg flex-1 overflow-hidden">
-                <div class="p-3 bg-gray-700/50 text-white font-semibold border-b border-blue-500 rounded-t-lg text-sm">
-                    Tabel Result Flowmeter 
-                </div>
-                
-                <div class="overflow-x-auto">
-                    <table class="table-dark mb-0">
-                        <thead>
-                            <tr>
-                                <th class="col-w-id">ID Mesin</th> 
-                                <th class="col-w-name">Nama Mesin</th>
-                                <th class="col-w-name">Material</th>
-                                <th class="col-w-name">No PO</th> 
-                                <th class="col-w-name">No PBI</th>
-                                <th class="col-w-stock">Stock (Kg)</th> 
-                                <th class="col-w-outlet-name">Output Outlet</th>
-                                <th class="col-w-flow-active text-active-green">Target Aktif (Kg)</th>
-                                <th class="col-w-flow-active text-active-green">Aktual (Kg)</th>
-                            </tr>
-                        </thead>
+            <div class="overflow-x-auto">
+                <table class="table-dark">
+                    <thead>
+                        <tr>
+                            <th style="width: 70px;">ID</th>
+                            <th>Nama Mesin</th>
+                            <th>Material</th>
+                            <th>No PO</th>
+                            <th>No PBI</th>
+                            <th class="stock-yellow">Stock (Kg)</th>
+                            <th>Output Outlet</th>
+                            <th class="text-active-green">Target (Kg)</th>
+                            <th class="text-active-green">Aktual (Kg)</th>
+                        </tr>
+                    </thead>
+                </table>
+                <div class="table-body-scroll">
+                    <table class="table-dark">
+                        <tbody id="tableBody">
+                            <tr><td colspan="9" class="py-20 opacity-50 italic text-center">Menghubungkan ke database...</td></tr>
+                        </tbody>
                     </table>
-                    
-                    <div class="table-body-scroll"> 
-                        <table class="table-dark mt-0">
-                            <tbody id="tableBody">
-                                <tr><td colspan="9" class="text-center py-10 text-white/50 italic">Menghubungkan ke server...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
         </div>
@@ -101,15 +103,31 @@
         const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&sheet=result_flowmeter&t=${new Date().getTime()}`;
         
         let stockChart;
-        const barColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+        const barColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f43f5e', '#6366f1', '#d946ef', '#14b8a6'];
 
-        // Fungsi format angka 18.012,39
+        // FUNGSI KHUSUS UNTUK MEMAKSA ANGKA JADI 1.900,00
+        function parseKeAngkaBenar(val) {
+            if (!val) return 0;
+            // 1. Hapus semua titik dan spasi
+            let cleanStr = val.toString().replace(/\s/g, '').replace(/\./g, '');
+            // 2. Ganti koma menjadi titik desimal
+            cleanStr = cleanStr.replace(',', '.');
+            
+            let num = parseFloat(cleanStr);
+            if (isNaN(num)) return 0;
+
+            // 3. LOGIKA PROTEKSI: Jika angka >= 1.000.000, kemungkinan besar itu input 1.900 yang salah baca
+            // Kita bagi 1000 untuk mengembalikannya ke ribuan
+            if (num >= 1000000) {
+                num = num / 1000;
+            }
+
+            return num;
+        }
+
         function formatIndo(val) {
-            if (!val) return "0,00";
-            let strVal = val.toString().trim();
-            if (strVal.includes(',') && !strVal.includes('.')) strVal = strVal.replace(',', '.');
-            let num = parseFloat(strVal);
-            return isNaN(num) ? "0,00" : num.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            let num = parseKeAngkaBenar(val);
+            return num.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         async function updateDashboard() {
@@ -120,51 +138,44 @@
                     return row.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(cell => cell.replace(/^"|"$/g, '').trim());
                 });
 
-                const content = rows.slice(1, 6); 
+                const content = rows.slice(1).filter(row => row[5] && row[5] !== "" && row[5] !== "-");
                 document.getElementById('totalMachines').innerText = content.length;
                 renderTable(content);
                 renderChart(content);
             } catch (error) {
-                console.error("Data error:", error);
+                console.error("Error:", error);
             }
         }
 
         function renderTable(data) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
-
             data.forEach(row => {
                 const aktifOutlet = parseInt(row[4]) || 0;
                 let outletNama = "-", targetAktif = "0,00";
-
                 if (aktifOutlet > 0) {
                     const baseIndex = 15 + ((aktifOutlet - 1) * 9);
                     outletNama = row[baseIndex] || `Outlet ${aktifOutlet}`;
                     targetAktif = formatIndo(row[baseIndex + 1]);
                 }
-
                 tbody.innerHTML += `
                     <tr>
-                        <td class="col-w-id opacity-50">${row[1]}</td>
-                        <td class="col-w-name text-blue-400 font-bold">${row[5]}</td>
-                        <td class="col-w-name">${row[9]}</td>
-                        <td class="col-w-name opacity-70">${row[6]}</td>
-                        <td class="col-w-name opacity-70">${row[7]}</td>
-                        <td class="col-w-stock stock-yellow-text font-bold">${formatIndo(row[11])}</td>
-                        <td class="col-w-outlet-name text-indigo-300 font-semibold">${outletNama}</td>
-                        <td class="col-w-flow-active text-active-green font-bold">${targetAktif}</td>
-                        <td class="col-w-flow-active text-active-green font-bold">${formatIndo(row[12])}</td>
-                    </tr>
-                `;
+                        <td style="width: 70px;" class="opacity-40 font-mono">${row[1]}</td>
+                        <td class="font-bold text-blue-400 text-left pl-4">${row[5]}</td>
+                        <td>${row[9]}</td>
+                        <td class="opacity-60">${row[6]}</td>
+                        <td class="opacity-60">${row[7]}</td>
+                        <td class="stock-yellow font-bold">${formatIndo(row[11])}</td>
+                        <td class="text-indigo-300 italic font-semibold">${outletNama}</td>
+                        <td class="text-active-green font-bold">${targetAktif}</td>
+                        <td class="text-active-green font-bold">${formatIndo(row[12])}</td>
+                    </tr>`;
             });
         }
 
         function renderChart(data) {
             const labels = data.map(row => row[5]);
-            const stockValues = data.map(row => {
-                let val = row[11] ? row[11].replace(',', '.') : '0';
-                return parseFloat(val) || 0;
-            });
+            const stockValues = data.map(row => parseKeAngkaBenar(row[11]));
             
             if (stockChart) stockChart.destroy();
             const ctx = document.getElementById('stockChart').getContext('2d');
@@ -173,10 +184,10 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Stock Bahan (Kg)',
+                        label: 'Stock (Kg)',
                         data: stockValues,
                         backgroundColor: barColors.slice(0, data.length),
-                        borderRadius: 4,
+                        borderRadius: 5,
                         barPercentage: 0.5
                     }]
                 },
@@ -186,12 +197,8 @@
                     plugins: { legend: { display: false } },
                     scales: {
                         y: { 
-                            title: { display: true, text: 'Stock (Kg)', color: '#9ca3af' },
-                            grid: { color: 'rgba(255,255,255,0.1)' }, 
-                            ticks: { 
-                                color: '#9ca3af',
-                                callback: function(value) { return value.toLocaleString('id-ID'); }
-                            } 
+                            grid: { color: 'rgba(255,255,255,0.05)' }, 
+                            ticks: { color: '#9ca3af', callback: (v) => v.toLocaleString('id-ID') } 
                         },
                         x: { ticks: { color: '#9ca3af' }, grid: { display: false } }
                     }
