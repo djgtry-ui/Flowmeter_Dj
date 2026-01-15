@@ -9,16 +9,12 @@
     <style>
         body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
         
-        /* Container Tabel dengan Scroll Bar */
         .scroll-container {
-            max-height: 480px; /* Tinggi area data */
+            max-height: 550px; 
             overflow-y: auto;
-            border-bottom-left-radius: 0.5rem;
-            border-bottom-right-radius: 0.5rem;
             background-color: #1e293b;
         }
 
-        /* Custom Scrollbar */
         .scroll-container::-webkit-scrollbar { width: 8px; }
         .scroll-container::-webkit-scrollbar-track { background: #1e293b; }
         .scroll-container::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 4px; }
@@ -29,49 +25,58 @@
             background-color: #334155;
             z-index: 10;
             border-bottom: 2px solid #3b82f6;
+            white-space: nowrap;
         }
 
         .table-row-hover:hover { background-color: rgba(59, 130, 246, 0.1); }
+        input:focus, select:focus { border-color: #3b82f6 !important; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
-    <h1 class="text-2xl font-bold text-center mb-8 uppercase tracking-widest text-white">Riwayat Transfer Bahan Flowmeter</h1>
+    <h1 class="text-2xl font-bold text-center mb-8 uppercase tracking-widest text-white">
+        <i class="fa-solid fa-clock-rotate-left mr-2 text-blue-500"></i>Riwayat Transfer Bahan Flowmeter
+    </h1>
 
     <div class="bg-slate-800 rounded-lg p-6 mb-6 shadow-2xl border border-slate-700">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <div>
                 <label class="block text-xs font-semibold mb-2 text-slate-400">Tanggal Mulai:</label>
-                <input type="date" id="startDate" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white focus:border-blue-500 outline-none">
+                <input type="date" id="startDate" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white outline-none">
             </div>
             <div>
                 <label class="block text-xs font-semibold mb-2 text-slate-400">Tanggal Akhir:</label>
-                <input type="date" id="endDate" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white focus:border-blue-500 outline-none">
+                <input type="date" id="endDate" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white outline-none">
             </div>
             <div>
-                <label class="block text-xs font-semibold mb-2 text-slate-400">Flowmeter (ID Mesin):</label>
+                <label class="block text-xs font-semibold mb-2 text-slate-400">Flowmeter:</label>
                 <select id="fmFilter" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white outline-none">
-                    <option value="">Semua</option>
+                    <option value="">Semua Mesin</option>
                     <script>for(let i=1; i<=15; i++) document.write(`<option value="${i}">Mesin ${i}</option>`);</script>
                 </select>
             </div>
+            <div>
+                <label class="block text-xs font-semibold mb-2 text-slate-400">Cari (Material/PO/PBI):</label>
+                <input type="text" id="searchInput" placeholder="Ketik kata kunci..." class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white outline-none">
+            </div>
             <div class="flex space-x-2">
-                <button onclick="applyFilter()" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded text-xs font-bold flex-1 text-white">✨ Filter</button>
-                <a href="index.html" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-xs font-bold flex-1 text-white">🏠Dashboard</a>
-                <button onclick="downloadExcel()" class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded text-xs font-bold text-white"><i class="fa-solid fa-file-excel"></i> Excel</button>
-               
+                <button onclick="applyFilter()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-xs font-bold flex-1 text-white transition-all">
+                    <i class="fa-solid fa-magnifying-glass mr-1"></i> Filter
+                </button>
+                <button onclick="downloadExcel()" class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded text-xs font-bold text-white">
+                    <i class="fa-solid fa-file-excel"></i>
+                </button>
             </div>
         </div>
     </div>
 
-    <div class="bg-slate-800 rounded-lg shadow-2xl border border-slate-700">
+    <div class="bg-slate-800 rounded-lg shadow-2xl border border-slate-700 overflow-hidden">
         <div class="p-4 flex flex-wrap justify-between items-center bg-slate-800/50 border-b border-slate-700">
-            <span id="infoData" class="text-xs font-medium text-slate-300 italic mb-2 md:mb-0">Memuat data...</span>
+            <span id="infoData" class="text-xs font-medium text-slate-300 italic">Memuat data dari Google Sheets...</span>
             <div class="flex space-x-1">
                 <button onclick="changePage('first')" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-xs transition">Awal</button>
                 <button id="pageIndicator" class="bg-blue-600 px-4 py-1 rounded text-xs font-bold">Halaman 1</button>
                 <button onclick="changePage('next')" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-xs transition">Berikutnya »</button>
-                <button onclick="changePage('last')" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-xs transition">Akhir</button>
             </div>
         </div>
 
@@ -79,130 +84,130 @@
             <table class="w-full text-left text-xs table-fixed-head">
                 <thead>
                     <tr class="text-slate-200">
-                        <th class="p-3 text-center w-12">ID</th>
-                        <th class="p-3">Waktu Transaksi</th>
-                        <th class="p-3 text-center">FM ID</th>
-                        <th class="p-3">Nama Material</th>
-                        <th class="p-3">No. PO</th>
-                        <th class="p-3">No. PBI</th>
-                        <th class="p-3">Outlet Output</th>
-                        <th class="p-3 text-right">Stock (Kg)</th>
-                        <th class="p-3 text-right text-yellow-400">Target (Kg)</th>
-                        <th class="p-3 text-right text-green-400">Aktual (Kg)</th>
+                        <th class="p-3 text-center w-16">ID LOG</th>
+                        <th class="p-3">WAKTU</th>
+                        <th class="p-3 text-center">FM</th>
+                        <th class="p-3">NAMA ID</th>
+                        <th class="p-3">MATERIAL</th>
+                        <th class="p-3">NO. PO</th>
+                        <th class="p-3">NO. PBI</th>
+                        <th class="p-3 text-right">STOCK</th>
+                        <th class="p-3 text-right text-yellow-400">TARGET</th>
+                        <th class="p-3 text-right text-green-400">AKTUAL</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    </tbody>
+                    <tr><td colspan="10" class="p-10 text-center italic opacity-50">Mengsinkronkan data terakhir...</td></tr>
+                </tbody>
             </table>
         </div>
     </div>
 
     <script>
         const SHEET_ID = '141uuIOYNPmIYjI6OvCHRbMOOXrWtfFVfAisAis0zL-0';
-        const GID = '461415172'; // Tab log flowmeter all
+        const GID = '461415172'; 
         const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}&t=${new Date().getTime()}`;
 
         let allData = [];
         let filteredData = [];
         let currentPage = 1;
-        const rowsPerPage = 20; // Tampilan 20 data per halaman
+        const rowsPerPage = 50;
 
+        /** Format Angka Desimal Indonesia **/
         function formatDisplayNum(val) {
-            if (!val || val === "0" || val === "") return "0.00";
-            // Membersihkan karakter non-numerik kecuali titik/koma desimal
-            let cleanVal = val.toString().replace(/[^\d.,-]/g, '');
-            let num = parseFloat(cleanVal.replace(',', '.'));
-            return isNaN(num) ? "0.00" : num.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (!val || val === "0" || val === "") return "0,00";
+            let num = parseFloat(val.toString().replace(/,/g, ''));
+            if (isNaN(num)) return "0,00";
+            return num.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
+        /** Ambil Data **/
         async function fetchData() {
             try {
                 const response = await fetch(CSV_URL);
                 const csvText = await response.text();
-                // Parsing CSV dengan menangani tanda kutip
                 const rows = csvText.split(/\r?\n/).filter(row => row.trim() !== "").map(row => {
                     return row.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(cell => cell.replace(/^"|"$/g, '').trim());
                 });
                 
-                // Ambil data (lewati header baris 1)
-                let data = rows.slice(1);
+                allData = rows.slice(1);
+                // Sort Descending berdasarkan Log ID
+                allData.sort((a, b) => (parseInt(b[0]) || 0) - (parseInt(a[0]) || 0));
                 
-                // Urutkan berdasarkan log_id (Index 0) DESC agar yang terbaru di atas
-                data.sort((a, b) => parseInt(b[0]) - parseInt(a[0]));
-                
-                allData = data;
-                filteredData = [...allData];
-                renderTable();
+                // Set default tanggal hari ini
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('startDate').value = today;
+                document.getElementById('endDate').value = today;
+
+                applyFilter();
             } catch (e) {
-                document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" class="p-10 text-center text-red-500">Gagal terhubung ke Google Sheets.</td></tr>';
+                document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" class="p-10 text-center text-red-500">Koneksi Database Terputus. Silakan Refresh.</td></tr>';
             }
         }
 
+        /** Render Tabel **/
         function renderTable() {
             const tbody = document.getElementById('tableBody');
             const start = (currentPage - 1) * rowsPerPage;
             const pageData = filteredData.slice(start, start + rowsPerPage);
             
             tbody.innerHTML = '';
-            
             if(pageData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" class="p-10 text-center">Tidak ada data ditemukan.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="p-10 text-center opacity-50">Data tidak ditemukan untuk filter ini.</td></tr>';
+                return;
             }
 
             pageData.forEach(row => {
-                // Pemetaan Kolom Berdasarkan image_f38d1d.png:
-                // 0:log_id, 1:log_timestamp, 2:id_mesin, 8:Nama_Material, 5:NoPO, 6:NoPBI, 11:Outlet_Nama, 10:Stock, 12:Target, 13:Aktual
                 tbody.innerHTML += `
                     <tr class="table-row-hover border-b border-slate-700/50">
-                        <td class="p-3 text-center text-slate-500 font-mono">${row[0]}</td>
-                        <td class="p-3 text-slate-300">${row[1]}</td>
-                        <td class="p-3 text-center text-blue-400 font-bold">${row[2]}</td>
-                        <td class="p-3 font-medium text-slate-200">${row[8] || '-'}</td>
-                        <td class="p-3 text-slate-400">${row[5] || '-'}</td>
-                        <td class="p-3 text-slate-400">${row[6] || '-'}</td>
-                        <td class="p-3 text-indigo-300">${row[11] || '-'}</td>
-                        <td class="p-3 text-right font-mono">${formatDisplayNum(row[10])}</td>
-                        <td class="p-3 text-right font-mono text-yellow-500 font-bold">${formatDisplayNum(row[12])}</td>
-                        <td class="p-3 text-right font-mono text-green-500 font-bold">${formatDisplayNum(row[13])}</td>
-                    </tr>
+                        <td class="p-3 text-center text-slate-500 font-mono">${row[0]}</td> <td class="p-3 text-slate-300">${row[1]}</td> <td class="p-3 text-center text-blue-400 font-bold">${row[2]}</td> <td class="p-3 text-indigo-300 font-semibold">${row[3] || '-'}</td> <td class="p-3 font-medium text-slate-200">${row[8] || '-'}</td> <td class="p-3 text-slate-400">${row[5] || '-'}</td> <td class="p-3 text-slate-400">${row[6] || '-'}</td> <td class="p-3 text-right font-mono">${formatDisplayNum(row[10])}</td> <td class="p-3 text-right font-mono text-yellow-500 font-bold">${formatDisplayNum(row[12])}</td> <td class="p-3 text-right font-mono text-green-500 font-bold">${formatDisplayNum(row[13])}</td> </tr>
                 `;
             });
 
-            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-            document.getElementById('pageIndicator').innerText = `Halaman ${currentPage}`;
-            document.getElementById('infoData').innerText = `Riwayat Transfer (Total ${filteredData.length} Baris. Menampilkan Halaman ${currentPage} dari ${totalPages})`;
+            const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
+            document.getElementById('pageIndicator').innerText = `Halaman ${currentPage} / ${totalPages}`;
+            document.getElementById('infoData').innerText = `Menampilkan ${filteredData.length} baris riwayat.`;
+        }
+
+        /** Logika Filter & Search **/
+        function applyFilter() {
+            const start = document.getElementById('startDate').value;
+            const end = document.getElementById('endDate').value;
+            const fm = document.getElementById('fmFilter').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+
+            filteredData = allData.filter(row => {
+                // Filter Mesin
+                let matchFm = fm ? (row[2] == fm) : true;
+                
+                // Filter Tanggal
+                let matchDate = true;
+                if (start || end) {
+                    const rowDateStr = row[1].split(' ')[0]; 
+                    if (start) matchDate = matchDate && rowDateStr >= start;
+                    if (end) matchDate = matchDate && rowDateStr <= end;
+                }
+
+                // Filter Pencarian (Material, PO, PBI, Nama_ID)
+                let matchSearch = true;
+                if (search) {
+                    const content = (row[8] + row[5] + row[6] + row[3]).toLowerCase();
+                    matchSearch = content.includes(search);
+                }
+
+                return matchFm && matchDate && matchSearch;
+            });
+
+            currentPage = 1;
+            renderTable();
         }
 
         function changePage(action) {
             const totalPages = Math.ceil(filteredData.length / rowsPerPage);
             if (action === 'next' && currentPage < totalPages) currentPage++;
             else if (action === 'first') currentPage = 1;
-            else if (action === 'last') currentPage = totalPages;
-            
             renderTable();
-            // Scroll otomatis ke atas saat ganti halaman
             document.querySelector('.scroll-container').scrollTop = 0;
-        }
-
-        function applyFilter() {
-            const start = document.getElementById('startDate').value;
-            const end = document.getElementById('endDate').value;
-            const fm = document.getElementById('fmFilter').value;
-
-            filteredData = allData.filter(row => {
-                let matchFm = fm ? (row[2] == fm) : true;
-                let matchDate = true;
-                if (start || end) {
-                    const rowDateStr = row[1].split(' ')[0]; // Ambil YYYY-MM-DD
-                    const rowDate = new Date(rowDateStr);
-                    if (start) matchDate = matchDate && rowDate >= new Date(start);
-                    if (end) matchDate = matchDate && rowDate <= new Date(end);
-                }
-                return matchFm && matchDate;
-            });
-
-            currentPage = 1;
-            renderTable();
         }
 
         function downloadExcel() {
