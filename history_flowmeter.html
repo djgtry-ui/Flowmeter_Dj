@@ -3,115 +3,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log Flowmeter - Cloud Propan</title>
+    <title>Riwayat Transfer Bahan Flowmeter</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
-        .scroll-container { max-height: 550px; overflow-y: auto; background-color: #1e293b; }
+        
+        /* Container tabel dengan scroll halus */
+        .scroll-container {
+            max-height: 550px; 
+            overflow-y: auto;
+            border-bottom-left-radius: 0.5rem;
+            border-bottom-right-radius: 0.5rem;
+            background-color: #1e293b;
+        }
+
         .scroll-container::-webkit-scrollbar { width: 8px; }
+        .scroll-container::-webkit-scrollbar-track { background: #1e293b; }
         .scroll-container::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 4px; }
-        .table-fixed-head thead th { position: sticky; top: 0; background-color: #334155; z-index: 10; border-bottom: 2px solid #3b82f6; white-space: nowrap; padding: 12px 8px; }
+
+        /* Header Tabel Tetap */
+        .table-fixed-head thead th {
+            position: sticky;
+            top: 0;
+            background-color: #334155;
+            z-index: 10;
+            border-bottom: 2px solid #3b82f6;
+            white-space: nowrap;
+            text-align: center;
+            padding: 12px 8px;
+        }
+
         .table-row-hover:hover { background-color: rgba(59, 130, 246, 0.1); }
-        td { padding: 8px; text-align: center; border-bottom: 1px solid #334155; }
+        input:focus, select:focus { border-color: #3b82f6 !important; outline: none; }
+        
+        td { padding: 10px 8px; text-align: center; vertical-align: middle; }
+        .text-right-aligned { text-align: right !important; padding-right: 20px; }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <div class="text-center mb-8">
-        <h1 class="text-2xl font-bold uppercase tracking-widest text-white">Log Transfer Flowmeter</h1>
-        <p class="text-blue-400 text-[10px] opacity-70 mt-1">GITHUB PAGES DEPLOYMENT (CORS BYPASS)</p>
+        <h1 class="text-2xl font-bold uppercase tracking-widest text-white">
+            Riwayat Transfer Bahan Flowmeter
+        </h1>
+        <p class="text-blue-400 text-[10px] opacity-70 mt-1 uppercase tracking-widest">Paging System Log - Clean Data Mode</p>
     </div>
 
     <div class="bg-slate-800 rounded-lg p-6 mb-6 shadow-2xl border border-slate-700">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <div>
                 <label class="block text-xs font-semibold mb-2 text-slate-400">Tanggal Mulai:</label>
-                <input type="date" id="startDate" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white">
+                <input type="date" id="startDate" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white focus:border-blue-500">
             </div>
             <div>
                 <label class="block text-xs font-semibold mb-2 text-slate-400">Tanggal Akhir:</label>
-                <input type="date" id="endDate" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white">
+                <input type="date" id="endDate" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white focus:border-blue-500">
             </div>
             <div>
-                <label class="block text-xs font-semibold mb-2 text-slate-400">ID Mesin:</label>
-                <input type="number" id="fmFilter" placeholder="Contoh: 5" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white">
+                <label class="block text-xs font-semibold mb-2 text-slate-400">Mesin:</label>
+                <select id="fmFilter" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white">
+                    <option value="">Semua Mesin</option>
+                    <script>for(let i=1; i<=12; i++) document.write(`<option value="${i}">Mesin ${i}</option>`);</script>
+                </select>
             </div>
-            <button onclick="fetchData()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-xs font-bold text-white h-[38px]">
-                <i class="fa-solid fa-sync-alt mr-2"></i>AMBIL DATA
-            </button>
+            <div>
+                <label class="block text-xs font-semibold mb-2 text-slate-400">Cari (PO/Material):</label>
+                <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="Ketik sesuatu..." class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white focus:border-blue-500">
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="fetchData()" class="bg-indigo-600 hover:bg-indigo-700 px-3 py-2 rounded text-xs font-bold flex-1 text-white transition-all flex items-center justify-center">
+                    <i class="fa-solid fa-sync-alt mr-2"></i> SYNC
+                </button>
+                <a href="index.html" class="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded text-xs font-bold flex-1 text-white text-center flex items-center justify-center">
+                    <i class="fa-solid fa-gauge-high mr-2"></i> DASHBOARD
+                </a>
+                <button onclick="downloadExcel()" class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded text-xs font-bold text-white flex items-center justify-center">
+                    <i class="fa-solid fa-file-excel"></i>
+                </button>
+            </div>
         </div>
     </div>
 
     <div class="bg-slate-800 rounded-lg shadow-2xl border border-slate-700 overflow-hidden">
-        <div class="p-4 flex justify-between bg-slate-800/50">
-            <span id="infoData" class="text-xs text-slate-400 italic">Menunggu input...</span>
+        <div class="p-4 flex flex-wrap justify-between items-center bg-slate-800/50 border-b border-slate-700">
+            <span id="infoData" class="text-xs font-medium text-slate-300 italic">Klik Sync Data untuk memproses database...</span>
+            <div class="flex space-x-1">
+                <button onclick="changePage('first')" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-xs transition">Awal</button>
+                <button id="pageIndicator" class="bg-blue-600 px-4 py-1 rounded text-xs font-bold">Hal 1</button>
+                <button onclick="changePage('next')" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-xs transition">Berikut »</button>
+            </div>
         </div>
+
         <div class="scroll-container">
-            <table class="w-full text-[11px] table-fixed-head">
+            <table class="w-full text-left text-xs table-fixed-head">
                 <thead>
                     <tr class="text-slate-200">
-                        <th>LOG ID</th><th>WAKTU</th><th>MSN</th><th>NAMA ID</th><th>MATERIAL</th><th>PO</th><th class="text-right">TARGET</th><th class="text-right">AKTUAL</th>
+                        <th style="width: 80px;">LOG ID</th>
+                        <th>WAKTU</th>
+                        <th style="width: 70px;">MSN</th>
+                        <th>NAMA ID</th>
+                        <th>MATERIAL</th>
+                        <th>NO. PO</th>
+                        <th>NO. PBI</th>
+                        <th class="text-right-aligned">STOCK</th>
+                        <th class="text-right-aligned text-yellow-400">TARGET</th>
+                        <th class="text-right-aligned text-green-400">AKTUAL</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <tr><td colspan="8" class="p-20 text-center opacity-40">Klik tombol AMBIL DATA</td></tr>
+                    <tr><td colspan="10" class="p-20 text-center italic opacity-50">Menunggu input user...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
     <script>
-        // Set default tanggal hari ini
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('startDate').value = today;
-        document.getElementById('endDate').value = today;
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzpqF-Tp-9rk8uF27HrBBUMO8-qVZqc7ybOE4mEgWnKgmmlGFf9x-UAnxB-3I-RgISR6A/exec";
+        const SHEET_ID = '141uuIOYNPmIYjI6OvCHRbMOOXrWtfFVfAisAis0zL-0';
+
+        let allData = [];
+        let currentPage = 1;
+        const rowsPerPage = 50;
+
+        window.onload = () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').value = today;
+            document.getElementById('endDate').value = today;
+        };
+
+        function formatDisplayNum(val) {
+            if (val === null || val === undefined || val === "") return "0,00";
+            let num = parseFloat(val.toString().replace(/,/g, ''));
+            if (isNaN(num)) return "0,00";
+            return num.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
 
         async function fetchData() {
             const start = document.getElementById('startDate').value;
             const end = document.getElementById('endDate').value;
-            const msn = document.getElementById('fmFilter').value;
+            const fm = document.getElementById('fmFilter').value;
             const tbody = document.getElementById('tableBody');
             const info = document.getElementById('infoData');
 
-            tbody.innerHTML = '<tr><td colspan="8" class="p-20 text-center italic">⏳ Sedang menembus CORS via Proxy...</td></tr>';
+            info.innerText = "⏳ Sedang memproses data unik...";
+            tbody.innerHTML = '<tr><td colspan="10" class="p-20 text-center"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i><br>Sinkronisasi...</td></tr>';
 
-            const targetUrl = `https://plantopr.propanraya.com/api/flowmeter/log_flowmeter?tanggal_mulai=${start}&tanggal_akhir=${end}${msn ? '&id_mesin='+msn : ''}`;
-            
-            // Menggunakan Proxy Cors-Anywhere atau AllOrigins
-            // Kita coba AllOrigins karena tidak butuh request akses manual
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+            let finalUrl = `${WEB_APP_URL}?start=${start}&end=${end}`;
+            if(fm) finalUrl += `&id_mesin=${fm}`;
 
             try {
-                const response = await fetch(proxyUrl);
-                const json = await response.json();
+                const response = await fetch(finalUrl);
+                const result = await response.json();
                 
-                // AllOrigins mengembalikan data dalam bentuk string di field "contents"
-                const result = JSON.parse(json.contents);
-
                 if (result.status === "success") {
-                    const data = result.data || [];
-                    info.innerText = `Berhasil mengambil ${data.length} data.`;
-                    
-                    tbody.innerHTML = data.map(item => `
-                        <tr class="table-row-hover">
-                            <td class="font-mono text-slate-500">${item.log_id}</td>
-                            <td>${item.log_timestamp}</td>
-                            <td class="font-bold text-blue-400">${item.id_mesin}</td>
-                            <td class="text-indigo-300">${item.Nama_ID}</td>
-                            <td class="text-slate-200">${item.Nama_Material}</td>
-                            <td>${item.NoPO}</td>
-                            <td class="text-right text-yellow-500">${parseFloat(item.Target).toFixed(2)}</td>
-                            <td class="text-right text-green-500 font-bold">${parseFloat(item.Aktual).toFixed(2)}</td>
-                        </tr>
-                    `).join('');
+                    allData = result.data || [];
+                    // Sort descending (terbaru di atas)
+                    allData.sort((a, b) => parseInt(b.log_id || b.id) - parseInt(a.log_id || a.id));
+                    currentPage = 1;
+                    renderTable();
                 } else {
-                    throw new Error("API mengembalikan status gagal");
+                    throw new Error("Gagal");
                 }
             } catch (e) {
-                console.error(e);
-                tbody.innerHTML = `<tr><td colspan="8" class="p-10 text-center text-red-400 font-bold">⚠️ GAGAL: Browser memblokir koneksi (CORS).<br><span class="font-normal text-[10px]">Coba gunakan browser lain atau buka akses CORS di server API.</span></td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="10" class="p-10 text-center text-red-500 font-bold">Gagal mengambil data. Periksa koneksi atau CORS.</td></tr>`;
             }
+        }
+
+        function renderTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const tbody = document.getElementById('tableBody');
+            
+            // 1. FILTER: Target != Aktual DAN Pencarian
+            let filtered = allData.filter(item => {
+                const targetVal = parseFloat((item.Target || item.target || 0).toString().replace(/,/g, ''));
+                const aktualVal = parseFloat((item.Aktual || item.aktual || 0).toString().replace(/,/g, ''));
+                
+                const isDifferent = Math.abs(targetVal - aktualVal) > 0.001; 
+                const searchStr = `${item.NoPO} ${item.NoPBI} ${item.Nama_Material} ${item.Nama_ID}`.toLowerCase();
+                const matchSearch = searchStr.includes(search);
+
+                return isDifferent && matchSearch;
+            });
+
+            // 2. ANTI-DOBEL: Menggunakan Set untuk memastikan data benar-benar unik
+            const seen = new Set();
+            const uniqueData = filtered.filter(item => {
+                // Kunci unik: Mesin + PO + Material + Target + Aktual
+                const uniqueKey = `${item.id_mesin}-${item.NoPO}-${item.Nama_Material}-${item.Target}-${item.Aktual}`;
+                if (seen.has(uniqueKey)) return false;
+                seen.add(uniqueKey);
+                return true;
+            });
+
+            const startIdx = (currentPage - 1) * rowsPerPage;
+            const pageData = uniqueData.slice(startIdx, startIdx + rowsPerPage);
+            
+            tbody.innerHTML = '';
+            if(pageData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="p-20 text-center">Data tidak ditemukan atau sudah tersinkron (Target = Aktual).</td></tr>';
+                document.getElementById('infoData').innerText = "Data Kosong";
+                return;
+            }
+
+            pageData.forEach(item => {
+                tbody.innerHTML += `
+                    <tr class="table-row-hover border-b border-slate-700/50">
+                        <td class="text-slate-500 font-mono">${item.log_id || item.id}</td>
+                        <td class="text-slate-400 text-[10px]">${item.log_timestamp || item.waktu}</td>
+                        <td class="text-blue-400 font-bold">${item.id_mesin}</td>
+                        <td class="text-indigo-300 font-semibold">${item.Nama_ID || '-'}</td>
+                        <td class="font-medium text-slate-200">${item.Nama_Material || '-'}</td>
+                        <td class="text-slate-400 font-mono">${item.NoPO || '-'}</td>
+                        <td class="text-slate-400 font-mono">${item.NoPBI || '-'}</td>
+                        <td class="text-right-aligned font-mono text-slate-400">${formatDisplayNum(item.Stock)}</td>
+                        <td class="text-right-aligned font-mono text-yellow-500 font-bold">${formatDisplayNum(item.Target)}</td>
+                        <td class="text-right-aligned font-mono text-green-500 font-bold">${formatDisplayNum(item.Aktual)}</td>
+                    </tr>
+                `;
+            });
+
+            const totalPages = Math.ceil(uniqueData.length / rowsPerPage) || 1;
+            document.getElementById('pageIndicator').innerText = `Hal ${currentPage} / ${totalPages}`;
+            document.getElementById('infoData').innerText = `Total: ${uniqueData.length} Data Unik (Filter Aktif)`;
+        }
+
+        function changePage(action) {
+            const totalPages = Math.ceil(allData.length / rowsPerPage);
+            if (action === 'next' && currentPage < totalPages) currentPage++;
+            else if (action === 'first') currentPage = 1;
+            renderTable();
+            document.querySelector('.scroll-container').scrollTop = 0;
+        }
+
+        function downloadExcel() {
+            window.open(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=xlsx`);
         }
     </script>
 </body>
