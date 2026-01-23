@@ -108,19 +108,20 @@
 
     <script>
     const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/141uuIOYNPmIYjI6OvCHRbMOOXrWtfFVfAisAis0zL-0/export?format=csv&sheet=result_flowmeter';
-    const PHP_BRIDGE = 'proxy_propan.php'; 
+    
+    // --- API CONFIGURATION ---
+    const API_URL = 'https://plantopr.propanraya.com/api/flowmeter/process';
+    const AUTH_HEADER = "Basic " + btoa("nurdjaya.atmaja@propanraya.com:iepropan");
+
     let activeMachineID = '1', userSelectedIdx = 1, lastHash = "";
 
-    // --- PERBAIKAN FUNGSI ANGKA ---
     const toNum = (v) => {
         if(!v || v === "") return 0;
-        // Hapus titik ribuan jika ada, lalu ubah koma desimal menjadi titik agar bisa dihitung sistem
         let clean = v.toString().replace(/\./g, '').replace(',', '.');
         return parseFloat(clean) || 0;
     };
 
     const formatIDR = (num) => {
-        // Menggunakan locale 'de-DE' (Jerman) karena formatnya sama dengan Indonesia: 1.200,8
         return new Intl.NumberFormat('de-DE', { 
             minimumFractionDigits: 1, 
             maximumFractionDigits: 2 
@@ -148,7 +149,6 @@
         if(activeEl !== 'd-material') document.getElementById('d-material').value = data[9] || "";
         if(activeEl !== 'd-pic') document.getElementById('d-pic').value = data[10] || "";
         
-        // UPDATE STOK: Menampilkan format 1.200,8
         if(activeEl !== 'd-stock') {
             document.getElementById('d-stock').value = formatIDR(toNum(data[11]));
         }
@@ -174,7 +174,6 @@
         if(activeEl !== 'i-target') document.getElementById('i-target').value = target.toFixed(2);
         if(activeEl !== 'd-out-name') document.getElementById('d-out-name').value = data[selBase] || "";
         
-        // UPDATE AKTUAL: Menampilkan format 1.200,8
         document.getElementById('d-aktual').innerText = formatIDR(aktual);
         document.getElementById('d-sysid').innerText = userSelectedIdx;
         
@@ -192,7 +191,6 @@
     }
 
     function handleStockUpdate(val) {
-        // Mengirim angka murni ke PLC (tanpa titik ribuan)
         const cleanValue = toNum(val);
         postData('Stock_Avail', cleanValue);
     }
@@ -210,13 +208,18 @@
         else payload[type] = value;
 
         try {
-            fetch(PHP_BRIDGE, { 
+            // KIRIM LANGSUNG KE API PROPAN
+            fetch(API_URL, { 
                 method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(payload) 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': AUTH_HEADER
+                }, 
+                body: JSON.stringify(payload),
+                mode: 'cors'
             });
             setTimeout(fetchData, 1000);
-        } catch (e) { console.error("POST Failed"); }
+        } catch (e) { console.error("API POST Failed"); }
     }
 
     const machines = [{id:'1', name:'TH SMT'}, {id:'2', name:'TH P-01'}, {id:'3', name:'TH V-09'}, {id:'4', name:'TH P-05'}, {id:'5', name:'TH WF'}];
