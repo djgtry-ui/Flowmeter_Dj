@@ -20,7 +20,7 @@
         .val-mono { font-family: 'JetBrains Mono', monospace; }
         .input-transparent { background: transparent; border: none; outline: none; width: 100%; font-weight: 700; font-size: 14px; }
         .input-transparent:focus { border-bottom: 1px solid #3b82f6; color: #60a5fa; }
-        @media (max-width: 768px) { .btn-ctrl { padding: 15px 5px; font-size: 10px; } .outlet-btn { flex: 1 0 30%; } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="p-4 md:p-6">
@@ -34,9 +34,16 @@
                     <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Control Panel V2.0</p>
                 </div>
             </div>
-            <div class="flex gap-2">
-                <a href="index.html" class="bg-blue-600 px-3 py-2 rounded text-[10px] font-bold text-white transition flex items-center gap-2"><i class="fas fa-home"></i> Dashboard</a>
-                <a href="history_flowmeter.html" class="bg-emerald-600 px-3 py-2 rounded text-[10px] font-bold text-white transition flex items-center gap-2"><i class="fas fa-history"></i> History</a>
+            
+            <div class="flex items-center gap-2">
+                <div id="conn-status" class="flex items-center gap-2 bg-slate-900/50 px-3 py-2 rounded border border-white/5 mr-1 transition-all">
+                 <span id="conn-icon" class="text-xs grayscale">📶</span>
+                 <span id="conn-text" class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">API STATUS: CHECKING</span>
+                </div>
+    
+                <a href="transaksi_flowmeter.html" class="bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🏠 TRANSAKSI</a>
+                <a href="history_flowmeter.html" class="bg-slate-600 hover:bg-slate-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">📚 HISTORY</a>
+                <a href="#" class="bg-red-600 hover:bg-red-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🔓 LOGOUT</a>
             </div>
         </header>
 
@@ -47,10 +54,7 @@
             <div><p class="text-[9px] text-slate-500 font-black uppercase mb-1">No PBI</p><input type="text" id="d-pbi" class="input-transparent text-white" onchange="postData('NoPBI', this.value)"></div>
             <div><p class="text-[9px] text-slate-500 font-black uppercase mb-1">Material Name</p><input type="text" id="d-material" class="input-transparent text-emerald-400" onchange="postData('Nama_Material', this.value)"></div>
             <div><p class="text-[9px] text-slate-500 font-black uppercase mb-1">PIC</p><input type="text" id="d-pic" class="input-transparent text-white" onchange="postData('PIC', this.value)"></div>
-            <div>
-                <p class="text-[9px] text-slate-500 font-black uppercase mb-1">Stock Avail</p>
-                <input type="text" id="d-stock" class="input-transparent text-blue-400" onchange="handleStockUpdate(this.value)">
-            </div>
+            <div><p class="text-[9px] text-slate-500 font-black uppercase mb-1">Stock Avail</p><input type="text" id="d-stock" class="input-transparent text-blue-400" onchange="postData('Stock', this.value)"></div>
             <div><p class="text-[9px] text-slate-500 font-black uppercase mb-1">Active Machine</p><div id="d-mname" class="font-bold text-yellow-500 uppercase text-sm">--</div></div>
         </div>
 
@@ -81,7 +85,7 @@
                 <div class="card-custom p-5">
                     <div class="flex justify-between text-[10px] font-black mb-2 uppercase text-slate-400"><span>Progress Filling</span><span id="d-progress" class="text-emerald-500">0%</span></div>
                     <div class="w-full bg-slate-900 rounded-full h-3 p-[2px] border border-white/5">
-                        <div id="progress-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-700 shadow-[0_0_12px_#10b981]" style="width: 0%"></div>
+                        <div id="progress-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-500 shadow-[0_0_12px_#10b981]" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
@@ -107,74 +111,71 @@
     </div>
 
     <script>
-    const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/141uuIOYNPmIYjI6OvCHRbMOOXrWtfFVfAisAis0zL-0/export?format=csv&sheet=result_flowmeter';
-    
-    // --- API CONFIGURATION ---
-    const API_URL = 'https://plantopr.propanraya.com/api/flowmeter/process';
+    // --- KONFIGURASI DIRECT API ---
+    const API_GET = 'https://plantopr.propanraya.com/api/flowmeter/result_flowmeter';
+    const API_POST = 'https://plantopr.propanraya.com/api/flowmeter/process';
     const AUTH_HEADER = "Basic " + btoa("nurdjaya.atmaja@propanraya.com:iepropan");
 
-    let activeMachineID = '1', userSelectedIdx = 1, lastHash = "";
+    let activeMachineID = '1', userSelectedIdx = 1;
+    let isUpdating = false;
 
-    const toNum = (v) => {
-        if(!v || v === "") return 0;
-        let clean = v.toString().replace(/\./g, '').replace(',', '.');
-        return parseFloat(clean) || 0;
-    };
-
-    const formatIDR = (num) => {
-        return new Intl.NumberFormat('de-DE', { 
-            minimumFractionDigits: 1, 
-            maximumFractionDigits: 2 
-        }).format(num);
-    };
-
+    // --- FUNGSI AMBIL DATA (GET) ---
     async function fetchData() {
-        try {
-            const res = await fetch(`${SHEET_CSV}&t=${Date.now()}`);
-            const text = await res.text();
-            if (text === lastHash) return;
-            lastHash = text;
+        if (isUpdating) return;
 
-            const rows = text.split(/\r?\n/).map(row => row.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim()));
-            const data = rows.find(r => r[1] === activeMachineID);
-            if (data) renderUI(data);
-        } catch (e) { console.error("Update Error"); }
+        try {
+            const res = await fetch(`${API_GET}?id_mesin=${activeMachineID}`, {
+                method: 'GET',
+                headers: { 'Authorization': AUTH_HEADER }
+            });
+            const json = await res.json();
+            // Sesuaikan jika struktur Propan langsung mengembalikan objek data atau array
+            if (json) {
+                const data = Array.isArray(json) ? json[0] : (json.data ? json.data : json);
+                renderUI(data);
+            }
+        } catch (e) { 
+            console.error("GET Error: ", e); 
+        }
     }
 
+    // --- RENDER UI (SAMA SEPERTI SEBELUMNYA) ---
     function renderUI(data) {
+        if (!data) return;
         const activeEl = document.activeElement.id;
 
-        if(activeEl !== 'd-po') document.getElementById('d-po').value = data[6] || "";
-        if(activeEl !== 'd-pbi') document.getElementById('d-pbi').value = data[7] || "";
-        if(activeEl !== 'd-material') document.getElementById('d-material').value = data[9] || "";
-        if(activeEl !== 'd-pic') document.getElementById('d-pic').value = data[10] || "";
+        if(activeEl !== 'd-po') document.getElementById('d-po').value = data.NoPO || "";
+        if(activeEl !== 'd-pbi') document.getElementById('d-pbi').value = data.NoPBI || "";
+        if(activeEl !== 'd-material') document.getElementById('d-material').value = data.Nama_Material || "";
+        if(activeEl !== 'd-pic') document.getElementById('d-pic').value = data.PIC || "";
+        if(activeEl !== 'd-stock') document.getElementById('d-stock').value = data.Stock || "0";
         
-        if(activeEl !== 'd-stock') {
-            document.getElementById('d-stock').value = formatIDR(toNum(data[11]));
-        }
-        
-        document.getElementById('d-mname').innerText = data[5] || "--";
+        document.getElementById('d-mname').innerText = data.Nama_ID || "MACHINE " + activeMachineID;
 
-        const outletAktifPLC = parseInt(data[4]) || 0;
+        const outletAktifPLC = parseInt(data.Aktif_Outlet) || 0;
         const outList = document.getElementById('outletList');
         let outHTML = '';
+
         for (let i = 1; i <= 11; i++) {
-            const base = 15 + ((i - 1) * 9);
-            const oName = data[base];
-            if (oName && oName !== "0" && oName !== "") {
-                outHTML += `<button onclick="selectOutlet(${i})" class="outlet-btn ${i == outletAktifPLC ? 'outlet-running' : ''} ${i == userSelectedIdx ? 'outlet-selected' : ''}">${oName}</button>`;
+            const oName = data[`Outlet_${i}_Nama`];
+            // Validasi outlet name yang sah
+            if (oName && oName.trim() !== "" && oName !== "0" && oName !== 0) {
+                outHTML += `
+                    <button onclick="selectOutlet(${i})" 
+                        class="outlet-btn ${i == outletAktifPLC ? 'outlet-running' : ''} ${i == userSelectedIdx ? 'outlet-selected' : ''}">
+                        ${oName}
+                    </button>`;
             }
         }
-        if(outList.innerHTML !== outHTML) outList.innerHTML = outHTML;
+        outList.innerHTML = outHTML;
 
-        const selBase = 15 + ((userSelectedIdx - 1) * 9);
-        const target = toNum(data[selBase + 1]);
-        const aktual = toNum(data[12]);
+        const target = parseFloat(data[`Outlet_${userSelectedIdx}_Target`]) || 0;
+        const aktual = parseFloat(data.Aktual) || 0;
         
         if(activeEl !== 'i-target') document.getElementById('i-target').value = target.toFixed(2);
-        if(activeEl !== 'd-out-name') document.getElementById('d-out-name').value = data[selBase] || "";
+        if(activeEl !== 'd-out-name') document.getElementById('d-out-name').value = data[`Outlet_${userSelectedIdx}_Nama`] || "";
         
-        document.getElementById('d-aktual').innerText = formatIDR(aktual);
+        document.getElementById('d-aktual').innerText = aktual.toLocaleString('de-DE', {minimumFractionDigits:2});
         document.getElementById('d-sysid').innerText = userSelectedIdx;
         
         const progress = target > 0 ? Math.min((aktual/target)*100, 100) : 0;
@@ -182,20 +183,10 @@
         document.getElementById('progress-bar').style.width = progress + "%";
     }
 
-    function selectOutlet(idx) {
-        userSelectedIdx = idx;
-        document.querySelectorAll('.outlet-btn').forEach((btn, i) => {
-            btn.classList.toggle('outlet-selected', (i+1) == idx);
-        });
-        fetchData();
-    }
-
-    function handleStockUpdate(val) {
-        const cleanValue = toNum(val);
-        postData('Stock_Avail', cleanValue);
-    }
-
+    // --- FUNGSI KIRIM DATA (POST) ---
     async function postData(type, value = null) {
+        isUpdating = true; 
+        
         let payload = { id_mesin: activeMachineID };
         const prefix = `Outlet_${userSelectedIdx}_`;
         
@@ -208,36 +199,74 @@
         else payload[type] = value;
 
         try {
-            // KIRIM LANGSUNG KE API PROPAN
-            fetch(API_URL, { 
-                method: 'POST', 
+            const response = await fetch(API_POST, {
+                method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
                     'Authorization': AUTH_HEADER
-                }, 
-                body: JSON.stringify(payload),
-                mode: 'cors'
+                },
+                body: JSON.stringify(payload)
             });
-            setTimeout(fetchData, 1000);
-        } catch (e) { console.error("API POST Failed"); }
+            console.log("POST Success:", await response.text());
+        } catch (e) { 
+            console.error("POST Error:", e); 
+        }
+        
+        // Buka kunci dan refresh data lebih cepat (Direct biasanya butuh jeda proses PLC)
+        setTimeout(() => { isUpdating = false; fetchData(); }, 1000);
     }
 
-    const machines = [{id:'1', name:'TH SMT'}, {id:'2', name:'TH P-01'}, {id:'3', name:'TH V-09'}, {id:'4', name:'TH P-05'}, {id:'5', name:'TH WF'}];
-    const mList = document.getElementById('machineList');
-    mList.innerHTML = machines.map(m => `
-        <button onclick="changeMachine('${m.id}', this)" class="btn-machine flex-shrink-0 ${m.id === activeMachineID ? 'active' : ''}">${m.name}</button>
-    `).join('');
+    // --- KONEKSI MONITOR (API PROPAN) ---
+    async function checkServerConnection() {
+        const connBox = document.getElementById('conn-status');
+        const connIcon = document.getElementById('conn-icon');
+        const connText = document.getElementById('conn-text');
+
+        try {
+            // Kita coba HEAD request ke endpoint propan
+            const res = await fetch(API_GET + "?id_mesin=1", { 
+                method: 'GET', 
+                headers: { 'Authorization': AUTH_HEADER }
+            });
+            
+            if (res.ok) {
+                connBox.classList.remove('bg-slate-900/50', 'border-red-500/50');
+                connBox.classList.add('bg-emerald-950/30', 'border-emerald-500/30');
+                connIcon.classList.remove('grayscale', 'animate-pulse');
+                connText.innerText = "PROPAN API (ONLINE)";
+                connText.classList.replace('text-slate-500', 'text-emerald-400');
+            } else {
+                throw new Error();
+            }
+        } catch (e) {
+            connBox.classList.add('bg-red-950/20', 'border-red-500/50');
+            connIcon.classList.add('grayscale', 'animate-pulse');
+            connText.innerText = "PROPAN API (OFFLINE)";
+            connText.classList.replace('text-emerald-400', 'text-red-500');
+        }
+    }
+
+    function selectOutlet(idx) { userSelectedIdx = idx; fetchData(); }
 
     function changeMachine(id, btnEl) {
         activeMachineID = id;
         document.querySelectorAll('.btn-machine').forEach(b => b.classList.remove('active'));
         btnEl.classList.add('active');
-        lastHash = ""; 
         fetchData();
     }
 
-    setInterval(fetchData, 2000);
+    // --- INITIALIZE ---
+    const machines = [{id:'1', name:'TH SMT'}, {id:'2', name:'TH P-01'}, {id:'3', name:'TH V-09'}, {id:'4', name:'TH P-05'}, {id:'5', name:'TH WF'}];
+    document.getElementById('machineList').innerHTML = machines.map(m => `
+        <button onclick="changeMachine('${m.id}', this)" class="btn-machine flex-shrink-0 ${m.id === activeMachineID ? 'active' : ''}">${m.name}</button>
+    `).join('');
+
+    // Interval: Ambil data setiap 1 detik untuk monitoring filling
+    setInterval(fetchData, 1000);
+    setInterval(checkServerConnection, 10000);
+    
     fetchData();
+    checkServerConnection();
     </script>
 </body>
 </html>
