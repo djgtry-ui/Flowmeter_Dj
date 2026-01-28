@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status Flowmeter - Monitoring Propan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    
+    <style>
+        :root { --color-primary: #3b82f6; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #0f2a76 50%, #0f172a 100%);
+            margin: 0;
+            color: #d1d5db;
+        }
+        
+        .table-container {
+            max-height: 450px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .table-dark { 
+            color: #d1d5db; 
+            border-collapse: separate; 
+            border-spacing: 0;
+            width: 100%; 
+        }
+
+        .table-dark thead th {
+            position: sticky;
+            top: 0;
+            background-color: #121212; 
+            color: white; 
+            padding: 12px 10px;
+            text-align: center;
+            border-bottom: 2px solid var(--color-primary); 
+            font-size: 0.70rem;
+            text-transform: uppercase;
+            z-index: 10;
+        }
+
+        .table-dark td {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1); 
+            padding: 12px 10px;
+            font-size: 0.75rem; 
+            white-space: nowrap; 
+            text-align: center;
+        }
+
+        .table-dark tbody tr:hover { background-color: rgba(59, 130, 246, 0.1); transition: 0.2s; }
+        .table-container::-webkit-scrollbar { width: 6px; }
+        .table-container::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+        .text-active-green { color: #6ee7b7; }
+        .stock-yellow { color: #facc15; }
+    </style>
+</head>
+
+<body class="p-4 md:p-8">
+    <div class="container mx-auto">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-white mb-2">Realtime Status Flowmeter</h1>
+            <p class="text-blue-300 opacity-80 uppercase tracking-widest text-[10px]">Monitoring System Data Result By Dj</p>
+        </div>
+
+        <div class="flex justify-end mb-6 space-x-3">
+            <a href="transaksi_flowmeter.html" class="bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🏠 TRANSAKSI</a>
+            <a href="history_flowmeter.html" class="bg-slate-600 hover:bg-slate-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">📚 HISTORY</a>
+            <a href="#" class="bg-red-600 hover:bg-red-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🔓 LOGOUT</a>
+        </div>
+
+        <div class="bg-gray-900/90 rounded-xl border border-white/10 shadow-2xl p-5 mb-8">
+            <div class="flex items-center justify-between mb-6 border-b border-blue-500/30 pb-3">
+                <h2 class="text-white font-semibold text-sm flex items-center uppercase italic">
+                    <i class="fa-solid fa-chart-column mr-3 text-blue-400"></i>
+                    Grafik Stock & Material ( <span id="totalMachines">0 </span>_Aktif)
+                </h2>
+            </div>
+            <div class="h-80 w-full">
+                <canvas id="stockChart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-gray-900/90 rounded-xl border border-white/10 shadow-2xl overflow-hidden">
+            <div class="p-4 bg-gray-800/50 border-b border-blue-500/30">
+                <h2 class="text-white font-semibold flex items-center text-xs uppercase italic">
+                    <i class="fa-solid fa-table-list mr-3 text-blue-400"></i>
+                    Tabel Monitoring Result
+                </h2>
+            </div>
+            
+            <div class="table-container">
+                <table class="table-dark">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">ID</th>
+                            <th>Nama Mesin</th>
+                            <th>Material</th>
+                            <th>No PO</th>
+                            <th>No PBI</th>
+                            <th class="stock-yellow">Stock (Kg)</th>
+                            <th>Output Outlet</th>
+                            <th class="text-active-green">Target (Kg)</th>
+                            <th class="text-active-green">Aktual (Kg)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="9" class="py-20 opacity-50 italic text-center">Menghubungkan ke API Propan...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://plantopr.propanraya.com/api/flowmeter/result_flowmeter';
+        const AUTH_HEADER = 'Basic bnVyZGpheWEuYXRtYWphQHByb3BhbnJheWEuY29tOmllcHJvcGFu';
+        
+        let stockChart;
+        const barColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f43f5e', '#6366f1', '#d946ef', '#14b8a6'];
+
+        function formatIndo(val) {
+            let num = parseFloat(val) || 0;
+            return num.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        async function updateDashboard() {
+            try {
+                const machineIds = ['1', '2', '3', '4', '5'];
+                const fetchPromises = machineIds.map(id => 
+                    fetch(`${API_URL}?id_mesin=${id}`, {
+                        headers: { 'Authorization': AUTH_HEADER }
+                    }).then(res => res.json())
+                );
+
+                const results = await Promise.all(fetchPromises);
+                const validData = results
+                    .filter(res => res.status === 'success' && res.data)
+                    .map(res => res.data);
+
+                document.getElementById('totalMachines').innerText = validData.length;
+                renderTable(validData);
+                renderChart(validData);
+            } catch (error) {
+                console.error("Error Fetching API:", error);
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            data.forEach(item => {
+                const aktifOutletIdx = item.Aktif_Outlet || "0";
+                const outletNama = item[`Outlet_${aktifOutletIdx}_Nama`] || "-";
+                const targetAktif = item[`Outlet_${aktifOutletIdx}_Target`] || 0;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="width: 50px;" class="opacity-40 font-mono">${item.id_mesin || '-'}</td>
+                        <td class="font-bold text-blue-400">${item.Nama_ID || '-'}</td>
+                        <td>${item.Nama_Material || '-'}</td>
+                        <td class="opacity-60">${item.NoPO || '-'}</td>
+                        <td class="opacity-60">${item.NoPBI || '-'}</td>
+                        <td class="stock-yellow font-bold">${formatIndo(item.Stock)}</td>
+                        <td class="text-indigo-300 italic font-semibold">${outletNama}</td>
+                        <td class="text-active-green font-bold">${formatIndo(targetAktif)}</td>
+                        <td class="text-active-green font-bold">${formatIndo(item.Aktual)}</td>
+                    </tr>`;
+            });
+        }
+
+        function renderChart(data) {
+            // Label diubah menjadi array [Nama Mesin, Nama Material] agar muncul bertumpuk
+            const labels = data.map(item => [item.Nama_ID, item.Nama_Material || 'N/A']);
+            const stockValues = data.map(item => parseFloat(item.Stock) || 0);
+            
+            if (stockChart) stockChart.destroy();
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            stockChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Stock (Kg)',
+                        data: stockValues,
+                        backgroundColor: barColors.slice(0, data.length),
+                        borderRadius: 5,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `Stock: ${formatIndo(context.raw)} Kg`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            grid: { color: 'rgba(255,255,255,0.05)' }, 
+                            ticks: { 
+                                color: '#9ca3af', 
+                                callback: (v) => v.toLocaleString('id-ID') 
+                            } 
+                        },
+                        x: { 
+                            ticks: { 
+                                color: '#ffffff', // Warna teks label dibuat lebih terang
+                                font: { size: 10, weight: 'bold' }
+                            }, 
+                            grid: { display: false } 
+                        }
+                    }
+                }
+            });
+        }
+
+        updateDashboard();
+        setInterval(updateDashboard, 15000);
+    </script>
+</body>
+</html>
