@@ -117,6 +117,10 @@
     </div>
 
     <script>
+        const loginStatus = localStorage.getItem('isLoggedIn');
+        if (loginStatus !== 'true') {
+        window.location.href = 'index.html'; // Balik ke login jika paksa masuk lewat URL
+        }
         const API_URL = 'https://plantopr.propanraya.com/api/flowmeter/result_flowmeter';
         const AUTH_HEADER = 'Basic bnVyZGpheWEuYXRtYWphQHByb3BhbnJheWEuY29tOmllcHJvcGFu';
         
