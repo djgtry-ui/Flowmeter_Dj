@@ -26,19 +26,16 @@
 <body class="p-4 md:p-6">
 
     <script>
-        // 1. PROTEKSI LOGIN & HAK AKSES KONTROL
         const userData = JSON.parse(localStorage.getItem('user_data'));
         if (!localStorage.getItem('isLoggedIn') || !userData) {
             window.location.href = 'index.html';
         }
         
-        // Cek izin kontrol (0 = dilarang)
         if (userData.akses.kontrol != 1 && userData.akses.kontrol != "1") {
             alert("Maaf, akun Anda tidak memiliki izin akses Kontrol Panel.");
             window.location.href = 'status_flowmeter.html';
         }
 
-        // 2. FITUR AUTO LOGOUT (IDLE 10 MENIT)
         let idleTime = 0;
         const maxIdleTime = 10;
         function resetTimer() { idleTime = 0; }
@@ -153,7 +150,6 @@
     let activeMachineID = '1', userSelectedIdx = 1;
     let isUpdating = false;
 
-    // Set Label User
     if(userData) document.getElementById('userLabel').innerText = `CP V2.0 | OPERATOR: ${userData.username}`;
 
     async function fetchData() {
@@ -194,9 +190,14 @@
 
         const target = parseFloat(data[`Outlet_${userSelectedIdx}_Target`]) || 0;
         const aktual = parseFloat(data.Aktual) || 0;
+        
+        // Update input target dengan format titik
         if(activeEl !== 'i-target') document.getElementById('i-target').value = target.toFixed(2);
         if(activeEl !== 'd-out-name') document.getElementById('d-out-name').value = data[`Outlet_${userSelectedIdx}_Nama`] || "";
-        document.getElementById('d-aktual').innerText = aktual.toLocaleString('de-DE', {minimumFractionDigits:2});
+        
+        // TAMPILAN AKTUAL menggunakan toFixed(2) agar hasilnya 0.00 bukan 0,00
+        document.getElementById('d-aktual').innerText = aktual.toFixed(2);
+        
         document.getElementById('d-sysid').innerText = userSelectedIdx;
         const progress = target > 0 ? Math.min((aktual/target)*100, 100) : 0;
         document.getElementById('d-progress').innerText = progress.toFixed(2) + "%";
