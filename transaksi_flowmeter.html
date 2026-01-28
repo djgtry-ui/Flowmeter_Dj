@@ -25,13 +25,48 @@
 </head>
 <body class="p-4 md:p-6">
 
+    <script>
+        // 1. PROTEKSI LOGIN & HAK AKSES KONTROL
+        const userData = JSON.parse(localStorage.getItem('user_data'));
+        if (!localStorage.getItem('isLoggedIn') || !userData) {
+            window.location.href = 'index.html';
+        }
+        
+        // Cek izin kontrol (0 = dilarang)
+        if (userData.akses.kontrol != 1 && userData.akses.kontrol != "1") {
+            alert("Maaf, akun Anda tidak memiliki izin akses Kontrol Panel.");
+            window.location.href = 'status_flowmeter.html';
+        }
+
+        // 2. FITUR AUTO LOGOUT (IDLE 10 MENIT)
+        let idleTime = 0;
+        const maxIdleTime = 10;
+        function resetTimer() { idleTime = 0; }
+        window.onmousemove = resetTimer;
+        window.onkeydown = resetTimer;
+        window.onclick = resetTimer;
+
+        setInterval(function() {
+            idleTime++;
+            if (idleTime >= maxIdleTime) {
+                localStorage.clear();
+                window.location.href = 'index.html';
+            }
+        }, 60000);
+
+        function logoutUser() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+    </script>
+
     <div class="max-w-7xl mx-auto space-y-6">
         <header class="flex justify-between items-center border-b border-white/10 pb-4">
             <div class="flex items-center gap-3">
                 <div class="bg-blue-600 p-2 rounded-lg text-white shadow-lg"><i class="fas fa-microchip"></i></div>
                 <div>
                     <h1 class="text-xl font-extrabold text-white tracking-tight leading-none uppercase">Flowmeter <span class="text-blue-500">Systems</span></h1>
-                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Control Panel V2.0</p>
+                    <p id="userLabel" class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">CP V2.0 | Loading User...</p>
                 </div>
             </div>
             
@@ -41,9 +76,9 @@
                  <span id="conn-text" class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">API STATUS: CHECKING</span>
                 </div>
     
-                <a href="index.html" class="bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🏠 DASHBOARD</a>
+                <a href="status_flowmeter.html" class="bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🏠 DASHBOARD</a>
                 <a href="history_flowmeter.html" class="bg-slate-600 hover:bg-slate-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">📚 HISTORY</a>
-                <a href="#" class="bg-red-600 hover:bg-red-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🔓 LOGOUT</a>
+                <a href="javascript:void(0)" onclick="logoutUser()" class="bg-red-600 hover:bg-red-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🔓 LOGOUT</a>
             </div>
         </header>
 
@@ -111,7 +146,6 @@
     </div>
 
     <script>
-    // --- KONFIGURASI DIRECT API ---
     const API_GET = 'https://plantopr.propanraya.com/api/flowmeter/result_flowmeter';
     const API_POST = 'https://plantopr.propanraya.com/api/flowmeter/process';
     const AUTH_HEADER = "Basic " + btoa("nurdjaya.atmaja@propanraya.com:iepropan");
@@ -119,77 +153,60 @@
     let activeMachineID = '1', userSelectedIdx = 1;
     let isUpdating = false;
 
-    // --- FUNGSI AMBIL DATA (GET) ---
+    // Set Label User
+    if(userData) document.getElementById('userLabel').innerText = `CP V2.0 | OPERATOR: ${userData.username}`;
+
     async function fetchData() {
         if (isUpdating) return;
-
         try {
             const res = await fetch(`${API_GET}?id_mesin=${activeMachineID}`, {
                 method: 'GET',
                 headers: { 'Authorization': AUTH_HEADER }
             });
             const json = await res.json();
-            // Sesuaikan jika struktur Propan langsung mengembalikan objek data atau array
             if (json) {
                 const data = Array.isArray(json) ? json[0] : (json.data ? json.data : json);
                 renderUI(data);
             }
-        } catch (e) { 
-            console.error("GET Error: ", e); 
-        }
+        } catch (e) { console.error("GET Error: ", e); }
     }
 
-    // --- RENDER UI (SAMA SEPERTI SEBELUMNYA) ---
     function renderUI(data) {
         if (!data) return;
         const activeEl = document.activeElement.id;
-
         if(activeEl !== 'd-po') document.getElementById('d-po').value = data.NoPO || "";
         if(activeEl !== 'd-pbi') document.getElementById('d-pbi').value = data.NoPBI || "";
         if(activeEl !== 'd-material') document.getElementById('d-material').value = data.Nama_Material || "";
         if(activeEl !== 'd-pic') document.getElementById('d-pic').value = data.PIC || "";
         if(activeEl !== 'd-stock') document.getElementById('d-stock').value = data.Stock || "0";
-        
         document.getElementById('d-mname').innerText = data.Nama_ID || "MACHINE " + activeMachineID;
 
         const outletAktifPLC = parseInt(data.Aktif_Outlet) || 0;
         const outList = document.getElementById('outletList');
         let outHTML = '';
-
         for (let i = 1; i <= 11; i++) {
             const oName = data[`Outlet_${i}_Nama`];
-            // Validasi outlet name yang sah
             if (oName && oName.trim() !== "" && oName !== "0" && oName !== 0) {
-                outHTML += `
-                    <button onclick="selectOutlet(${i})" 
-                        class="outlet-btn ${i == outletAktifPLC ? 'outlet-running' : ''} ${i == userSelectedIdx ? 'outlet-selected' : ''}">
-                        ${oName}
-                    </button>`;
+                outHTML += `<button onclick="selectOutlet(${i})" class="outlet-btn ${i == outletAktifPLC ? 'outlet-running' : ''} ${i == userSelectedIdx ? 'outlet-selected' : ''}">${oName}</button>`;
             }
         }
         outList.innerHTML = outHTML;
 
         const target = parseFloat(data[`Outlet_${userSelectedIdx}_Target`]) || 0;
         const aktual = parseFloat(data.Aktual) || 0;
-        
         if(activeEl !== 'i-target') document.getElementById('i-target').value = target.toFixed(2);
         if(activeEl !== 'd-out-name') document.getElementById('d-out-name').value = data[`Outlet_${userSelectedIdx}_Nama`] || "";
-        
         document.getElementById('d-aktual').innerText = aktual.toLocaleString('de-DE', {minimumFractionDigits:2});
         document.getElementById('d-sysid').innerText = userSelectedIdx;
-        
         const progress = target > 0 ? Math.min((aktual/target)*100, 100) : 0;
         document.getElementById('d-progress').innerText = progress.toFixed(2) + "%";
         document.getElementById('progress-bar').style.width = progress + "%";
     }
 
-    // --- FUNGSI KIRIM DATA (POST) ---
     async function postData(type, value = null) {
         isUpdating = true; 
-        
         let payload = { id_mesin: activeMachineID };
         const prefix = `Outlet_${userSelectedIdx}_`;
-        
         if (type === 'START') payload[prefix + 'Start'] = 1;
         else if (type === 'STOP') payload[prefix + 'Stop'] = 1;
         else if (type === 'RESET') payload[prefix + 'Reset'] = 1;
@@ -199,55 +216,36 @@
         else payload[type] = value;
 
         try {
-            const response = await fetch(API_POST, {
+            await fetch(API_POST, {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': AUTH_HEADER
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': AUTH_HEADER },
                 body: JSON.stringify(payload)
             });
-            console.log("POST Success:", await response.text());
-        } catch (e) { 
-            console.error("POST Error:", e); 
-        }
-        
-        // Buka kunci dan refresh data lebih cepat (Direct biasanya butuh jeda proses PLC)
+        } catch (e) { console.error("POST Error:", e); }
         setTimeout(() => { isUpdating = false; fetchData(); }, 1000);
     }
 
-    // --- KONEKSI MONITOR (API PROPAN) ---
     async function checkServerConnection() {
         const connBox = document.getElementById('conn-status');
         const connIcon = document.getElementById('conn-icon');
         const connText = document.getElementById('conn-text');
-
         try {
-            // Kita coba HEAD request ke endpoint propan
-            const res = await fetch(API_GET + "?id_mesin=1", { 
-                method: 'GET', 
-                headers: { 'Authorization': AUTH_HEADER }
-            });
-            
+            const res = await fetch(API_GET + "?id_mesin=1", { method: 'GET', headers: { 'Authorization': AUTH_HEADER } });
             if (res.ok) {
-                connBox.classList.remove('bg-slate-900/50', 'border-red-500/50');
-                connBox.classList.add('bg-emerald-950/30', 'border-emerald-500/30');
+                connBox.className = "flex items-center gap-2 bg-emerald-950/30 border border-emerald-500/30 px-3 py-2 rounded mr-1";
                 connIcon.classList.remove('grayscale', 'animate-pulse');
                 connText.innerText = "(ONLINE)";
-                connText.classList.replace('text-slate-500', 'text-emerald-400');
-            } else {
-                throw new Error();
-            }
+                connText.className = "text-[9px] font-bold text-emerald-400 uppercase tracking-tighter";
+            } else { throw new Error(); }
         } catch (e) {
-            connBox.classList.add('bg-red-950/20', 'border-red-500/50');
+            connBox.className = "flex items-center gap-2 bg-red-950/20 border border-red-500/50 px-3 py-2 rounded mr-1";
             connIcon.classList.add('grayscale', 'animate-pulse');
             connText.innerText = "API (OFFLINE)";
-            connText.classList.replace('text-emerald-400', 'text-red-500');
+            connText.className = "text-[9px] font-bold text-red-500 uppercase tracking-tighter";
         }
     }
 
     function selectOutlet(idx) { userSelectedIdx = idx; fetchData(); }
-
     function changeMachine(id, btnEl) {
         activeMachineID = id;
         document.querySelectorAll('.btn-machine').forEach(b => b.classList.remove('active'));
@@ -255,16 +253,11 @@
         fetchData();
     }
 
-    // --- INITIALIZE ---
     const machines = [{id:'1', name:'TH SMT'}, {id:'2', name:'TH P-01'}, {id:'3', name:'TH V-09'}, {id:'4', name:'TH P-05'}, {id:'5', name:'TH WF'}];
-    document.getElementById('machineList').innerHTML = machines.map(m => `
-        <button onclick="changeMachine('${m.id}', this)" class="btn-machine flex-shrink-0 ${m.id === activeMachineID ? 'active' : ''}">${m.name}</button>
-    `).join('');
+    document.getElementById('machineList').innerHTML = machines.map(m => `<button onclick="changeMachine('${m.id}', this)" class="btn-machine flex-shrink-0 ${m.id === activeMachineID ? 'active' : ''}">${m.name}</button>`).join('');
 
-    // Interval: Ambil data setiap 1 detik untuk monitoring filling
     setInterval(fetchData, 1000);
     setInterval(checkServerConnection, 10000);
-    
     fetchData();
     checkServerConnection();
     </script>
