@@ -43,11 +43,30 @@
 <body class="p-4 md:p-8">
 
     <script>
-        // 1. PROTEKSI LOGIN
+        // 1. PROTEKSI LOGIN & DATA USER
         const userData = JSON.parse(localStorage.getItem('user_data'));
         if (!localStorage.getItem('isLoggedIn') || !userData) {
             window.location.href = 'index.html';
         }
+
+        // 2. FITUR AUTO LOGOUT (IDLE 10 MENIT)
+        let idleTime = 0;
+        const maxIdleTime = 10; 
+        function resetTimer() { idleTime = 0; }
+        window.onload = resetTimer;
+        window.onmousemove = resetTimer;
+        window.onmousedown = resetTimer;
+        window.ontouchstart = resetTimer;
+        window.onclick = resetTimer;
+        window.onkeydown = resetTimer;
+
+        setInterval(function() {
+            idleTime++;
+            if (idleTime >= maxIdleTime) {
+                alert("Sesi Anda berakhir karena tidak ada aktivitas.");
+                logoutUser();
+            }
+        }, 60000);
 
         function logoutUser() {
             localStorage.clear();
@@ -142,7 +161,9 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzpqF-Tp-9rk8uF27HrBBUMO8-qVZqc7ybOE4mEgWnKgmmlGFf9x-UAnxB-3I-RgISR6A/exec";
+        // CONFIG API PROPAN
+        const BASE_API_URL = "https://plantopr.propanraya.com/api/flowmeter/log_flowmeter";
+        const AUTH_HEADER = "Basic " + btoa("nurdjaya.atmaja@propanraya.com:iepropan");
         
         let allRawData = [];
         let currentPage = 1;
@@ -155,10 +176,11 @@
             document.getElementById('endDate').value = today;
         };
 
+        // Format angka ke 0.00 (Titik)
         function formatDisplayNum(val) {
-            if (val === null || val === undefined || val === "") return "0,00";
+            if (val === null || val === undefined || val === "") return "0.00";
             let num = parseFloat(val.toString().replace(/,/g, ''));
-            return isNaN(num) ? "0,00" : num.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            return isNaN(num) ? "0.00" : num.toFixed(2);
         }
 
         async function fetchData() {
@@ -169,23 +191,36 @@
             const info = document.getElementById('infoData');
 
             info.innerText = "⏳ PROCESSING DATA...";
-            tbody.innerHTML = '<tr><td colspan="10" class="p-20 text-center"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-blue-500"></i><br><span class="uppercase tracking-widest text-[10px] font-bold">Menyaring Data Identik...</span></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="p-20 text-center"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-blue-500"></i><br><span class="uppercase tracking-widest text-[10px] font-bold">Mengambil Data dari Server...</span></td></tr>';
 
-            let finalUrl = `${WEB_APP_URL}?start=${start}&end=${end}`;
+            // Build URL sesuai contoh PHP
+            let finalUrl = `${BASE_API_URL}?tanggal_mulai=${start}&tanggal_akhir=${end}`;
             if(fm) finalUrl += `&id_mesin=${fm}`;
 
             try {
-                const response = await fetch(finalUrl);
+                const response = await fetch(finalUrl, {
+                    method: 'GET',
+                    headers: { 
+                        'Accept': 'application/json',
+                        'Authorization': AUTH_HEADER 
+                    }
+                });
                 const result = await response.json();
                 
-                if (result.status === "success") {
-                    allRawData = result.data || [];
-                    allRawData.sort((a, b) => parseInt(b.log_id || 0) - parseInt(a.log_id || 0));
-                    currentPage = 1;
-                    renderTable();
-                } else { throw new Error(); }
+                // Menangani response Propan (biasanya langsung array atau {data: []})
+                const dataArray = Array.isArray(result) ? result : (result.data || []);
+                
+                allRawData = dataArray;
+                // Urutkan berdasarkan ID terbaru
+                allRawData.sort((a, b) => parseInt(b.log_id || 0) - parseInt(a.log_id || 0));
+                
+                currentPage = 1;
+                renderTable();
+                
             } catch (e) {
-                tbody.innerHTML = `<tr><td colspan="10" class="p-10 text-center text-red-500 font-bold uppercase tracking-tighter">Gagal sinkronisasi data dari Google Sheets.</td></tr>`;
+                console.error(e);
+                tbody.innerHTML = `<tr><td colspan="10" class="p-10 text-center text-red-500 font-bold uppercase tracking-tighter">Gagal sinkronisasi data dari Server API.</td></tr>`;
+                info.innerText = "ERROR CONNECTION";
             }
         }
 
@@ -194,7 +229,7 @@
             const seen = new Set();
             
             return allRawData.filter(item => {
-                // Kunci Unik: Gabungan Mesin + PO + Target + Aktual
+                // Kunci Unik agar tidak dobel: Gabungan Mesin + PO + Target + Aktual
                 const uniqueKey = `${item.id_mesin}-${item.NoPO}-${item.Target}-${item.Aktual}`;
                 const searchStr = `${item.NoPO} ${item.NoPBI} ${item.Nama_Material} ${item.Nama_ID}`.toLowerCase();
                 
@@ -225,7 +260,7 @@
                 tbody.innerHTML += `
                     <tr class="table-row-hover">
                         <td class="text-slate-500 font-mono text-[10px]">${item.log_id}</td>
-                        <td class="text-slate-400 text-[10px]">${item.log_timestamp}</td>
+                        <td class="text-slate-400 text-[10px]">${item.log_timestamp || item.created_at}</td>
                         <td class="text-blue-500 font-black">${item.id_mesin}</td>
                         <td class="text-indigo-300 font-bold text-left uppercase text-[10px]">${item.Nama_ID || '-'}</td>
                         <td class="font-bold text-slate-200 text-left uppercase text-[10px]">${item.Nama_Material || '-'}</td>
@@ -252,6 +287,12 @@
         }
 
         function downloadExcel() {
+            // CEK AKSES DOWNLOAD
+            if (userData.akses.download != 1 && userData.akses.download != "1") {
+                alert("Maaf, Anda tidak memiliki izin untuk mendownload data Excel.");
+                return;
+            }
+
             const dataToDownload = getFilteredUniqueData();
             if (dataToDownload.length === 0) {
                 alert("Tidak ada data untuk diunduh.");
@@ -260,7 +301,7 @@
 
             const worksheetData = dataToDownload.map(item => ({
                 "LOG ID": item.log_id,
-                "WAKTU": item.log_timestamp,
+                "WAKTU": item.log_timestamp || item.created_at,
                 "ID MESIN": item.id_mesin,
                 "NAMA ID": item.Nama_ID,
                 "MATERIAL": item.Nama_Material,
