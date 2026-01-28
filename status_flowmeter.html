@@ -17,12 +17,13 @@
             color: #d1d5db;
             min-height: 100vh;
         }
-        /* ... CSS Anda tetap sama ... */
         .table-container { max-height: 450px; overflow-y: auto; position: relative; }
         .table-dark { color: #d1d5db; border-collapse: separate; border-spacing: 0; width: 100%; }
         .table-dark thead th { position: sticky; top: 0; background-color: #121212; color: white; padding: 12px 10px; text-align: center; border-bottom: 2px solid var(--color-primary); font-size: 0.70rem; text-transform: uppercase; z-index: 10; }
         .table-dark td { border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 12px 10px; font-size: 0.75rem; white-space: nowrap; text-align: center; }
         .table-dark tbody tr:hover { background-color: rgba(59, 130, 246, 0.1); transition: 0.2s; }
+        .stock-yellow { color: #fbbf24; }
+        .text-active-green { color: #10b981; }
     </style>
 </head>
 
@@ -89,12 +90,18 @@
     </div>
 
     <script>
-        // Terapkan Hak Akses dari LocalStorage
-        document.getElementById('welcomeUser').innerText = `USER: ${userData.username} | MONITORING SYSTEM DATA RESULT`;
-        
-        // Tampilkan tombol hanya jika punya akses (kolom di Google Sheets)
-        if(userData.akses.history === 1) document.getElementById('btn-history').classList.remove('hidden');
-        if(userData.akses.kontrol === 1) document.getElementById('btn-transaksi').classList.remove('hidden');
+        // Terapkan Hak Akses dari Data Login
+        if (userData) {
+            document.getElementById('welcomeUser').innerText = `USER: ${userData.username} | MONITORING SYSTEM DATA RESULT`;
+            
+            // Cek akses (1 = Aktif)
+            if(userData.akses.history == 1 || userData.akses.history == "1") {
+                document.getElementById('btn-history').classList.remove('hidden');
+            }
+            if(userData.akses.kontrol == 1 || userData.akses.kontrol == "1") {
+                document.getElementById('btn-transaksi').classList.remove('hidden');
+            }
+        }
 
         const API_URL = 'https://plantopr.propanraya.com/api/flowmeter/result_flowmeter';
         const AUTH_HEADER = 'Basic bnVyZGpheWEuYXRtYWphQHByb3BhbnJheWEuY29tOmllcHJvcGFu';
@@ -177,15 +184,26 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
                     scales: {
-                        y: { ticks: { color: '#9ca3af' } },
-                        x: { ticks: { color: '#ffffff' } }
+                        y: { 
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#9ca3af' } 
+                        },
+                        x: { 
+                            grid: { display: false },
+                            ticks: { color: '#ffffff', font: { size: 10 } } 
+                        }
                     }
                 }
             });
         }
 
         updateDashboard();
+        // Update otomatis setiap 15 detik
         setInterval(updateDashboard, 15000);
     </script>
 </body>
