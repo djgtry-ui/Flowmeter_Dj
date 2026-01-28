@@ -66,7 +66,7 @@
             </div>
             <div class="flex gap-2">
                 <a href="status_flowmeter.html" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded shadow-lg text-xs font-bold text-white transition-all italic uppercase">🏠 Dashboard</a>
-                <a href="transaksi_flowmeter.html" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded shadow-lg text-xs font-bold text-white transition-all italic uppercase">🎮 Control Panel</a>
+                <a href="transaksi_flowmeter.html" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded shadow-lg text-xs font-bold text-white transition-all italic uppercase">🎮 Transaksi</a>
                 <button onclick="logoutUser()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded shadow-lg text-xs font-bold text-white transition-all italic uppercase">🔓 Logout</button>
             </div>
         </header>
@@ -273,7 +273,7 @@
 
             const worksheet = XLSX.utils.json_to_sheet(worksheetData);
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Log Flowmeter Clean");
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Log Flowmeter");
             XLSX.writeFile(workbook, `Log_Flowmeter_${new Date().toISOString().split('T')[0]}.xlsx`);
         }
     </script>
