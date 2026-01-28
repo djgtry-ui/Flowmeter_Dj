@@ -41,7 +41,7 @@
                  <span id="conn-text" class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">API STATUS: CHECKING</span>
                 </div>
     
-                <a href="transaksi_flowmeter.html" class="bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🏠 TRANSAKSI</a>
+                <a href="index.html" class="bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🏠 DASHBOARD</a>
                 <a href="history_flowmeter.html" class="bg-slate-600 hover:bg-slate-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">📚 HISTORY</a>
                 <a href="#" class="bg-red-600 hover:bg-red-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🔓 LOGOUT</a>
             </div>
@@ -233,7 +233,7 @@
                 connBox.classList.remove('bg-slate-900/50', 'border-red-500/50');
                 connBox.classList.add('bg-emerald-950/30', 'border-emerald-500/30');
                 connIcon.classList.remove('grayscale', 'animate-pulse');
-                connText.innerText = "PROPAN API (ONLINE)";
+                connText.innerText = "(ONLINE)";
                 connText.classList.replace('text-slate-500', 'text-emerald-400');
             } else {
                 throw new Error();
@@ -241,7 +241,7 @@
         } catch (e) {
             connBox.classList.add('bg-red-950/20', 'border-red-500/50');
             connIcon.classList.add('grayscale', 'animate-pulse');
-            connText.innerText = "PROPAN API (OFFLINE)";
+            connText.innerText = "API (OFFLINE)";
             connText.classList.replace('text-emerald-400', 'text-red-500');
         }
     }
