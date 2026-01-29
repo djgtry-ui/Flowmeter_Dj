@@ -61,12 +61,12 @@
         messageDiv.classList.add('hidden');
         
         try {
-            // Gunakan satu fetch saja tanpa 'no-cors' agar bisa membaca balasan JSON
-            const response = await fetch(WEB_APP_URL, {
-                method: 'POST',
-                headers: {'Content-Type': 'text/plain;charset=utf-8',
-                },
-                body: JSON.stringify({ username, password })
+            // PERBAIKAN: Menggunakan GET agar tembus di WebView Android (APK)
+            // Ditambah Cache Buster (cb) agar tidak nyangkut di cache HP
+            const finalUrl = `${WEB_APP_URL}?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&cb=${new Date().getTime()}`;
+            
+            const response = await fetch(finalUrl, {
+                method: 'GET'
             });
             
             const data = await response.json();
@@ -80,7 +80,7 @@
                 localStorage.setItem('user_data', JSON.stringify(data.user));
                 
                 setTimeout(() => {
-                    window.location.href = 'status_flowmeter.html'; 
+                    window.location.replace('status_flowmeter.html'); 
                 }, 1000);
             } else {
                 messageDiv.className = 'mt-4 p-3 rounded-lg bg-red-600 text-white';
@@ -90,9 +90,8 @@
             
         } catch (error) {
             messageDiv.className = 'mt-4 p-3 rounded-lg bg-amber-600 text-white';
-            messageDiv.textContent = 'Gagal terhubung ke API. Pastikan Anda sudah Deploy Ulang sebagai "New Version".';
+            messageDiv.textContent = 'Gagal Terhubung. Pastikan internet aktif.';
             messageDiv.classList.remove('hidden');
-            console.error("Fetch Error:", error);
         } finally {
             loginBtn.textContent = 'Sign In';
             loginBtn.disabled = false;
