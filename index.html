@@ -48,7 +48,7 @@
 <script>
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzpqF-Tp-9rk8uF27HrBBUMO8-qVZqc7ybOE4mEgWnKgmmlGFf9x-UAnxB-3I-RgISR6A/exec";
 
-    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
         const username = document.getElementById('username').value;
@@ -59,18 +59,19 @@
         loginBtn.textContent = 'Memverifikasi...';
         loginBtn.disabled = true;
         messageDiv.classList.add('hidden');
+
+        // Menggunakan teknik JSONP/Simple GET untuk menembus proteksi WebView
+        const finalUrl = WEB_APP_URL + "?username=" + encodeURIComponent(username) + 
+                         "&password=" + encodeURIComponent(password) + 
+                         "&action=login&cb=" + new Date().getTime();
         
-        // Buat URL dengan parameter untuk GET (Paling aman untuk APK)
-        const finalUrl = `${WEB_APP_URL}?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&action=login&cb=${new Date().getTime()}`;
-        
-        try {
-            const response = await fetch(finalUrl);
-            
-            // Cek jika response ok
-            if (!response.ok) throw new Error('Network response was not ok');
-            
-            const data = await response.json();
-            
+        fetch(finalUrl, {
+            method: 'GET',
+            mode: 'cors',
+            redirect: 'follow'
+        })
+        .then(response => response.json())
+        .then(data => {
             if (data.success) {
                 messageDiv.className = 'mt-4 p-3 rounded-lg bg-emerald-600 text-white text-center';
                 messageDiv.textContent = 'Login Berhasil..!';
@@ -84,19 +85,20 @@
                 }, 1000);
             } else {
                 messageDiv.className = 'mt-4 p-3 rounded-lg bg-red-600 text-white text-center';
-                messageDiv.textContent = data.message || 'Gagal Login';
+                messageDiv.textContent = data.message;
                 messageDiv.classList.remove('hidden');
+                loginBtn.textContent = 'Sign In';
+                loginBtn.disabled = false;
             }
-            
-        } catch (error) {
-            console.error("Error detail:", error);
+        })
+        .catch(error => {
+            console.error(error);
             messageDiv.className = 'mt-4 p-3 rounded-lg bg-amber-600 text-white text-center';
-            messageDiv.textContent = 'Gagal terhubung ke server. Periksa koneksi internet Anda.';
+            messageDiv.textContent = 'Koneksi Ditolak Server (CORS Error).';
             messageDiv.classList.remove('hidden');
-        } finally {
             loginBtn.textContent = 'Sign In';
             loginBtn.disabled = false;
-        }
+        });
     });
 </script>
 </body>
