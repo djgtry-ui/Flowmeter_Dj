@@ -56,23 +56,23 @@
         const loginBtn = document.getElementById('loginBtn');
         const messageDiv = document.getElementById('message');
         
-        loginBtn.textContent = 'Verifikasi...';
+        loginBtn.textContent = 'Memverifikasi...';
         loginBtn.disabled = true;
         messageDiv.classList.add('hidden');
         
+        // Buat URL dengan parameter untuk GET (Paling aman untuk APK)
+        const finalUrl = `${WEB_APP_URL}?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&action=login&cb=${new Date().getTime()}`;
+        
         try {
-            // PERBAIKAN: Menggunakan GET agar tembus di WebView Android (APK)
-            // Ditambah Cache Buster (cb) agar tidak nyangkut di cache HP
-            const finalUrl = `${WEB_APP_URL}?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&cb=${new Date().getTime()}`;
+            const response = await fetch(finalUrl);
             
-            const response = await fetch(finalUrl, {
-                method: 'GET'
-            });
+            // Cek jika response ok
+            if (!response.ok) throw new Error('Network response was not ok');
             
             const data = await response.json();
             
             if (data.success) {
-                messageDiv.className = 'mt-4 p-3 rounded-lg bg-emerald-600 text-white';
+                messageDiv.className = 'mt-4 p-3 rounded-lg bg-emerald-600 text-white text-center';
                 messageDiv.textContent = 'Login Berhasil..!';
                 messageDiv.classList.remove('hidden');
                 
@@ -80,17 +80,18 @@
                 localStorage.setItem('user_data', JSON.stringify(data.user));
                 
                 setTimeout(() => {
-                    window.location.replace('status_flowmeter.html'); 
+                    window.location.href = 'status_flowmeter.html'; 
                 }, 1000);
             } else {
-                messageDiv.className = 'mt-4 p-3 rounded-lg bg-red-600 text-white';
-                messageDiv.textContent = data.message;
+                messageDiv.className = 'mt-4 p-3 rounded-lg bg-red-600 text-white text-center';
+                messageDiv.textContent = data.message || 'Gagal Login';
                 messageDiv.classList.remove('hidden');
             }
             
         } catch (error) {
-            messageDiv.className = 'mt-4 p-3 rounded-lg bg-amber-600 text-white';
-            messageDiv.textContent = 'Gagal Terhubung. Pastikan internet aktif.';
+            console.error("Error detail:", error);
+            messageDiv.className = 'mt-4 p-3 rounded-lg bg-amber-600 text-white text-center';
+            messageDiv.textContent = 'Gagal terhubung ke server. Periksa koneksi internet Anda.';
             messageDiv.classList.remove('hidden');
         } finally {
             loginBtn.textContent = 'Sign In';
