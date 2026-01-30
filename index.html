@@ -90,10 +90,36 @@
 
     </div>
 
-
-
 <script>
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzpqF-Tp-9rk8uF27HrBBUMO8-qVZqc7ybOE4mEgWnKgmmlGFf9x-UAnxB-3I-RgISR6A/exec";
+
+    // --- DAFTAR USER ALTERNATIF (OFFLINE/LOCAL) ---
+    const offlineUsers = [
+        {
+            username: "nurdjaya.atmaja@propanraya.com",
+            password: "Djaya1234",
+            user: {
+                username: "Nur Djaya (Super)",
+                akses: { flowmeter: 1, download: 1, history: 1, kontrol: 1 }
+            }
+        },
+        {
+            username: "ie@propanraya.com",
+            password: "ie123",
+            user: {
+                username: "IE Team",
+                akses: { flowmeter: 1, download: 1, history: 1, kontrol: 0 }
+            }
+        },
+        {
+            username: "operator@propanraya.com",
+            password: "propan", // Ganti sesuai keinginan
+            user: {
+                username: "Operator Produksi",
+                akses: { flowmeter: 1, download: 0, history: 1, kontrol: 0 }
+            }
+        }
+    ];
 
     document.getElementById('loginForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -103,50 +129,77 @@
         const loginBtn = document.getElementById('loginBtn');
         const messageDiv = document.getElementById('message');
         
-        loginBtn.textContent = 'Menghubungkan...';
+        loginBtn.textContent = 'Memverifikasi...';
         loginBtn.disabled = true;
         messageDiv.classList.add('hidden');
 
-        // Parameter dikirim via URL (GET) agar tidak diblokir Android
+        // 1. CEK KE DAFTAR ALTERNATIF DULU (OFFLINE)
+        const localMatch = offlineUsers.find(u => u.username === username && u.password === password);
+
+        if (localMatch) {
+            processLoginSuccess(localMatch.user);
+            return; // Berhenti di sini, tidak perlu panggil Google Sheets
+        }
+
+        // 2. JIKA TIDAK ADA DI LOKAL, BARU CEK KE GOOGLE SHEETS (ONLINE)
         const finalUrl = `${WEB_APP_URL}?action=login&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&cb=${new Date().getTime()}`;
         
-        fetch(finalUrl, {
-            method: 'GET',
-            cache: 'no-store'
-        })
+        fetch(finalUrl, { method: 'GET', cache: 'no-store' })
         .then(response => {
             if (!response.ok) throw new Error('Network Error');
             return response.json();
         })
         .then(data => {
             if (data.success) {
-                messageDiv.className = 'mt-4 p-3 rounded-lg bg-emerald-600 text-white text-center';
-                messageDiv.textContent = 'Login Berhasil!';
-                messageDiv.classList.remove('hidden');
-                
-                localStorage.setItem('isLoggedIn', 'true');
-                localStorage.setItem('user_data', JSON.stringify(data.user));
-                
-                setTimeout(() => {
-                    window.location.replace('status_flowmeter.html'); 
-                }, 1000);
+                processLoginSuccess(data.user);
             } else {
-                messageDiv.className = 'mt-4 p-3 rounded-lg bg-red-600 text-white text-center';
-                messageDiv.textContent = data.message;
-                messageDiv.classList.remove('hidden');
-                loginBtn.disabled = false;
-                loginBtn.textContent = 'Sign In';
+                showError(data.message || 'Username atau Password salah.');
             }
         })
         .catch(error => {
             console.error(error);
-            messageDiv.className = 'mt-4 p-3 rounded-lg bg-amber-600 text-white text-center';
-            messageDiv.textContent = 'Server Sibuk / Tidak Ada Koneksi.';
+            showError('Server Sibuk / Tidak Ada Koneksi.');
+        });
+
+        // FUNGSI UNTUK PROSES LOGIN BERHASIL
+        function processLoginSuccess(userDataObj) {
+            messageDiv.className = 'mt-4 p-3 rounded-lg bg-emerald-600 text-white text-center';
+            messageDiv.textContent = 'Login Berhasil!';
+            messageDiv.classList.remove('hidden');
+            
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('user_data', JSON.stringify(userDataObj));
+            
+            setTimeout(() => {
+                window.location.replace('status_flowmeter.html'); 
+            }, 1000);
+        }
+
+        // FUNGSI UNTUK ERROR
+        function showError(msg) {
+            messageDiv.className = 'mt-4 p-3 rounded-lg bg-red-600 text-white text-center';
+            messageDiv.textContent = msg;
             messageDiv.classList.remove('hidden');
             loginBtn.disabled = false;
             loginBtn.textContent = 'Sign In';
-        });
+        }
     });
+
+    // --- AUTO LOGIN DARI MIT APP INVENTOR ---
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const userAuto = urlParams.get('user_auto');
+        if (userAuto) {
+            try {
+                const data = JSON.parse(decodeURIComponent(userAuto));
+                if (data.success) {
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('user_data', JSON.stringify(data.user));
+                    window.location.replace('status_flowmeter.html');
+                }
+            } catch (e) { console.error("Auto-login failed", e); }
+        }
+    };
 </script>
 
 </body>
