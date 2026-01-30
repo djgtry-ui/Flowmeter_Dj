@@ -87,6 +87,14 @@
         
 
         <div id="message" class="mt-4 p-3 rounded-lg hidden text-center text-sm font-semibold"></div>
+        <div id="navigationArea" class="mt-4 hidden">
+            <a href="status_flowmeter.html" 
+               id="btnGoDashboard"
+               class="block w-full bg-emerald-500 hover:bg-emerald-600 text-white text-center py-3 rounded-lg font-bold transition-all shadow-lg animate-bounce">
+                MASUK KE DASHBOARD →
+            </a>
+           
+        </div>
 
     </div>
 
@@ -161,27 +169,25 @@
             showError('Server Sibuk / Tidak Ada Koneksi.');
         });
 
-        // FUNGSI UNTUK PROSES LOGIN BERHASIL
         function processLoginSuccess(userDataObj) {
+            // 1. Simpan data ke LocalStorage
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('user_data', JSON.stringify(userDataObj));
+
+            // 2. Tampilkan Pesan Sukses
+            const messageDiv = document.getElementById('message');
             messageDiv.className = 'mt-4 p-3 rounded-lg bg-emerald-600 text-white text-center';
             messageDiv.textContent = 'Login Berhasil!';
             messageDiv.classList.remove('hidden');
-            
-            localStorage.setItem('isLoggedIn', 'true');
-            localStorage.setItem('user_data', JSON.stringify(userDataObj));
-            
-            const targetUrl = 'status_flowmeter.html';
-    
-    // Coba pindah halaman segera tanpa delay yang terlalu lama
-            setTimeout(() => {
-                if (navigator.userAgent.includes("Android")) {
-            // Khusus Android WebView agar tidak stuck
-                window.location.assign(targetUrl);
-                } else {
-                    window.location.href = targetUrl;
-                }
-            }, 500);
 
+            // 3. Tampilkan Tombol Navigasi Manual
+            const navArea = document.getElementById('navigationArea');
+            navArea.classList.remove('hidden');
+
+            // 4. Coba pindah otomatis (tetap dijalankan sebagai usaha pertama)
+            setTimeout(() => {
+                window.location.href = 'status_flowmeter.html';
+            }, 1500);
         }
 
         // FUNGSI UNTUK ERROR
