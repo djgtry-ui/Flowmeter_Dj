@@ -208,6 +208,9 @@
                 }
             } catch (e) { console.error("Auto-login failed", e); }
         }
+        if (localStorage.getItem('isLoggedIn') === 'true') {
+        window.location.replace('status_flowmeter.html');
+    }
     };
 </script>
 
