@@ -170,9 +170,18 @@
             localStorage.setItem('isLoggedIn', 'true');
             localStorage.setItem('user_data', JSON.stringify(userDataObj));
             
+            const targetUrl = 'status_flowmeter.html';
+    
+    // Coba pindah halaman segera tanpa delay yang terlalu lama
             setTimeout(() => {
-                window.location.replace('status_flowmeter.html'); 
-            }, 1000);
+                if (navigator.userAgent.includes("Android")) {
+            // Khusus Android WebView agar tidak stuck
+                window.location.assign(targetUrl);
+                } else {
+                    window.location.href = targetUrl;
+                }
+            }, 500);
+
         }
 
         // FUNGSI UNTUK ERROR
