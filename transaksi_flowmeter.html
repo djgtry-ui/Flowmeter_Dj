@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        body { background: #0b1437; color: #d1d5db; font-family: 'Plus Jakarta Sans', sans-serif; touch-action: manipulation; min-height: 100vh; }
+        body { background: #0b1437; color: #d1d5db; font-family: 'Plus Jakarta Sans', sans-serif; touch-action: manipulation; }
         .card-custom { background: #111c44; border: 1px solid #1b254b; border-radius: 12px; }
         .btn-machine { background: #1a2244; border: 1px solid #2d3748; padding: 10px 15px; border-radius: 8px; font-size: 11px; font-weight: 800; transition: 0.2s; color: #94a3b8; }
         .btn-machine.active { background: #3b82f6; color: white; border-color: #60a5fa; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
@@ -20,51 +20,29 @@
         .val-mono { font-family: 'JetBrains Mono', monospace; }
         .input-transparent { background: transparent; border: none; outline: none; width: 100%; font-weight: 700; font-size: 14px; }
         .input-transparent:focus { border-bottom: 1px solid #3b82f6; color: #60a5fa; }
-        .hidden { display: none !important; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="p-4 md:p-6">
 
-    <div id="login-section" class="flex items-center justify-center min-h-[85vh]">
-        <div class="bg-[#111c44] p-8 rounded-2xl border border-white/10 shadow-2xl w-full max-w-md">
-            <div class="text-center mb-8">
-                <i class="fa-solid fa-unlock-keyhole text-blue-500 text-5xl mb-4"></i>
-                <h2 class="text-2xl font-bold text-white uppercase tracking-tighter">Gateway Login</h2>
-                <p class="text-gray-400 text-[10px] uppercase tracking-widest opacity-60">Flowmeter Transaction Access</p>
-            </div>
-            <form onsubmit="handleLogin(event)" class="space-y-5">
-                <div>
-                    <label class="block text-[10px] font-bold text-blue-400 mb-2 uppercase">Username</label>
-                    <input type="text" id="userInput" required class="w-full bg-[#0b1437] border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-all text-sm">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-blue-400 mb-2 uppercase">Password</label>
-                    <input type="password" id="passInput" required class="w-full bg-[#0b1437] border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-all text-sm">
-                </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-lg shadow-xl transition-all text-xs tracking-widest uppercase">
-                    Buka Akses
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <div id="main-app" class="max-w-7xl mx-auto space-y-6 hidden">
+    <div class="max-w-7xl mx-auto space-y-6">
         <header class="flex justify-between items-center border-b border-white/10 pb-4">
             <div class="flex items-center gap-3">
                 <div class="bg-blue-600 p-2 rounded-lg text-white shadow-lg"><i class="fas fa-microchip"></i></div>
                 <div>
                     <h1 class="text-xl font-extrabold text-white tracking-tight leading-none uppercase">Flowmeter <span class="text-blue-500">Systems</span></h1>
-                    <p id="userLabel" class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">CP V2.0 | Loading...</p>
+                    <p id="userLabel" class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">CP V2.0 | ACCESS GRANTED</p>
                 </div>
             </div>
             
             <div class="flex items-center gap-2">
                 <div id="conn-status" class="flex items-center gap-2 bg-slate-900/50 px-3 py-2 rounded border border-white/5 mr-1 transition-all">
-                    <span id="conn-icon" class="text-xs grayscale">📶</span>
-                    <span id="conn-text" class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">API STATUS: CHECKING</span>
+                 <span id="conn-icon" class="text-xs grayscale">📶</span>
+                 <span id="conn-text" class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">API STATUS: CHECKING</span>
                 </div>
-                <button onclick="logoutUser()" class="bg-red-600 hover:bg-red-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🔓 LOGOUT</button>
+    
+                <a href="status_flowmeter.html" class="bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🏠 DASHBOARD</a>
+                <a href="history_flowmeter.html" class="bg-slate-600 hover:bg-slate-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">📚 HISTORY</a>
             </div>
         </header>
 
@@ -132,13 +110,6 @@
     </div>
 
     <script>
-    // --- DATABASE USER (Hanya untuk Gatekeeper) ---
-    const userDatabase = [
-        { u: "nurdjaya.atmaja@propanraya.com", p: "Djaya1234" },
-        { u: "operator@propanraya.com", p: "propan" }
-    ];
-
-    // --- KREDENSIAL API TETAP (Hanya untuk request ke Server) ---
     const API_GET = 'https://plantopr.propanraya.com/api/flowmeter/result_flowmeter';
     const API_POST = 'https://plantopr.propanraya.com/api/flowmeter/process';
     const AUTH_HEADER = "Basic " + btoa("nurdjaya.atmaja@propanraya.com:iepropan");
@@ -146,45 +117,8 @@
     let activeMachineID = '1', userSelectedIdx = 1;
     let isUpdating = false;
 
-    // --- FUNGSI LOGIN ---
-    function handleLogin(e) {
-        e.preventDefault();
-        const user = document.getElementById('userInput').value;
-        const pass = document.getElementById('passInput').value;
-        const found = userDatabase.find(x => x.u === user && x.p === pass);
-
-        if (found) {
-            localStorage.setItem('gate_auth', 'true');
-            localStorage.setItem('gate_user', user.split('@')[0]);
-            initApp();
-        } else {
-            alert("Login Gagal! Akun tidak terdaftar.");
-        }
-    }
-
-    function logoutUser() {
-        localStorage.clear();
-        location.reload();
-    }
-
-    function initApp() {
-        if (localStorage.getItem('gate_auth') === 'true') {
-            document.getElementById('login-section').classList.add('hidden');
-            document.getElementById('main-app').classList.remove('hidden');
-            document.getElementById('userLabel').innerText = `CP V2.0 | OPERATOR: ${localStorage.getItem('gate_user')}`;
-            
-            // Jalankan Engine Dashboard
-            renderMachineList();
-            setInterval(fetchData, 1000);
-            setInterval(checkServerConnection, 10000);
-            fetchData();
-            checkServerConnection();
-        }
-    }
-
-    // --- ENGINE TRANSAKSI ---
     async function fetchData() {
-        if (isUpdating || localStorage.getItem('gate_auth') !== 'true') return;
+        if (isUpdating) return;
         try {
             const res = await fetch(`${API_GET}?id_mesin=${activeMachineID}`, {
                 method: 'GET',
@@ -198,6 +132,11 @@
         } catch (e) { console.error("GET Error: ", e); }
     }
 
+    function formatDot(val) {
+        let num = parseFloat(val) || 0;
+        return num.toFixed(2); 
+    }
+
     function renderUI(data) {
         if (!data) return;
         const activeEl = document.activeElement.id;
@@ -206,7 +145,7 @@
         if(activeEl !== 'd-pbi') document.getElementById('d-pbi').value = data.NoPBI || "";
         if(activeEl !== 'd-material') document.getElementById('d-material').value = data.Nama_Material || "";
         if(activeEl !== 'd-pic') document.getElementById('d-pic').value = data.PIC || "";
-        if(activeEl !== 'd-stock') document.getElementById('d-stock').value = (parseFloat(data.Stock) || 0).toFixed(2);
+        if(activeEl !== 'd-stock') document.getElementById('d-stock').value = formatDot(data.Stock);
         
         document.getElementById('d-mname').innerText = data.Nama_ID || "MACHINE " + activeMachineID;
 
@@ -215,7 +154,7 @@
         let outHTML = '';
         for (let i = 1; i <= 11; i++) {
             const oName = data[`Outlet_${i}_Nama`];
-            if (oName && oName.trim() !== "" && oName !== "0") {
+            if (oName && oName.trim() !== "" && oName !== "0" && oName !== 0) {
                 outHTML += `<button onclick="selectOutlet(${i})" class="outlet-btn ${i == outletAktifPLC ? 'outlet-running' : ''} ${i == userSelectedIdx ? 'outlet-selected' : ''}">${oName}</button>`;
             }
         }
@@ -224,13 +163,14 @@
         const target = parseFloat(data[`Outlet_${userSelectedIdx}_Target`]) || 0;
         const aktual = parseFloat(data.Aktual) || 0;
         
-        if(activeEl !== 'i-target') document.getElementById('i-target').value = target.toFixed(2);
+        if(activeEl !== 'i-target') document.getElementById('i-target').value = formatDot(target);
         if(activeEl !== 'd-out-name') document.getElementById('d-out-name').value = data[`Outlet_${userSelectedIdx}_Nama`] || "";
         
-        document.getElementById('d-aktual').innerText = aktual.toFixed(2);
+        document.getElementById('d-aktual').innerText = formatDot(aktual);
         document.getElementById('d-sysid').innerText = userSelectedIdx;
         const progress = target > 0 ? Math.min((aktual/target)*100, 100) : 0;
-        document.getElementById('d-progress').innerText = progress.toFixed(2) + "%";
+        
+        document.getElementById('d-progress').innerText = formatDot(progress) + "%";
         document.getElementById('progress-bar').style.width = progress + "%";
     }
 
@@ -253,7 +193,7 @@
                 body: JSON.stringify(payload)
             });
         } catch (e) { console.error("POST Error:", e); }
-        setTimeout(() => { isUpdating = false; fetchData(); }, 800);
+        setTimeout(() => { isUpdating = false; fetchData(); }, 1000);
     }
 
     async function checkServerConnection() {
@@ -264,14 +204,15 @@
             const res = await fetch(API_GET + "?id_mesin=1", { method: 'GET', headers: { 'Authorization': AUTH_HEADER } });
             if (res.ok) {
                 connBox.className = "flex items-center gap-2 bg-emerald-950/30 border border-emerald-500/30 px-3 py-2 rounded mr-1";
-                connIcon.classList.remove('grayscale');
+                connIcon.classList.remove('grayscale', 'animate-pulse');
                 connText.innerText = "(ONLINE)";
                 connText.className = "text-[9px] font-bold text-emerald-400 uppercase tracking-tighter";
-            }
+            } else { throw new Error(); }
         } catch (e) {
             connBox.className = "flex items-center gap-2 bg-red-950/20 border border-red-500/50 px-3 py-2 rounded mr-1";
-            connIcon.classList.add('grayscale');
+            connIcon.classList.add('grayscale', 'animate-pulse');
             connText.innerText = "API (OFFLINE)";
+            connText.className = "text-[9px] font-bold text-red-500 uppercase tracking-tighter";
         }
     }
 
@@ -283,14 +224,13 @@
         fetchData();
     }
 
-    function renderMachineList() {
-        const machines = [{id:'1', name:'TH SMT'}, {id:'2', name:'TH P-01'}, {id:'3', name:'TH V-09'}, {id:'4', name:'TH P-05'}, {id:'5', name:'TH WF'}];
-        document.getElementById('machineList').innerHTML = machines.map(m => `<button onclick="changeMachine('${m.id}', this)" class="btn-machine flex-shrink-0 ${m.id === activeMachineID ? 'active' : ''}">${m.name}</button>`).join('');
-    }
+    const machines = [{id:'1', name:'TH SMT'}, {id:'2', name:'TH P-01'}, {id:'3', name:'TH V-09'}, {id:'4', name:'TH P-05'}, {id:'5', name:'TH WF'}];
+    document.getElementById('machineList').innerHTML = machines.map(m => `<button onclick="changeMachine('${m.id}', this)" class="btn-machine flex-shrink-0 ${m.id === activeMachineID ? 'active' : ''}">${m.name}</button>`).join('');
 
-    // Jalankan pengecekan auth saat load pertama kali
-    window.onload = initApp;
-
+    setInterval(fetchData, 1000);
+    setInterval(checkServerConnection, 10000);
+    fetchData();
+    checkServerConnection();
     </script>
 </body>
 </html>
