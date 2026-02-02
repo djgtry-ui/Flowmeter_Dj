@@ -167,14 +167,24 @@
         } catch (e) { console.error("GET Error: ", e); }
     }
 
+    function formatDot(val) {
+        let num = parseFloat(val) || 0;
+        // Menggunakan toFixed(2) menjamin pemisah desimal adalah titik (.)
+        return num.toFixed(2); 
+    }
+
     function renderUI(data) {
         if (!data) return;
         const activeEl = document.activeElement.id;
+        
         if(activeEl !== 'd-po') document.getElementById('d-po').value = data.NoPO || "";
         if(activeEl !== 'd-pbi') document.getElementById('d-pbi').value = data.NoPBI || "";
         if(activeEl !== 'd-material') document.getElementById('d-material').value = data.Nama_Material || "";
         if(activeEl !== 'd-pic') document.getElementById('d-pic').value = data.PIC || "";
-        if(activeEl !== 'd-stock') document.getElementById('d-stock').value = data.Stock || "0";
+        
+        // FIX: Tampilan Stock pakai titik
+        if(activeEl !== 'd-stock') document.getElementById('d-stock').value = formatDot(data.Stock);
+        
         document.getElementById('d-mname').innerText = data.Nama_ID || "MACHINE " + activeMachineID;
 
         const outletAktifPLC = parseInt(data.Aktif_Outlet) || 0;
@@ -191,16 +201,19 @@
         const target = parseFloat(data[`Outlet_${userSelectedIdx}_Target`]) || 0;
         const aktual = parseFloat(data.Aktual) || 0;
         
-        // Update input target dengan format titik
-        if(activeEl !== 'i-target') document.getElementById('i-target').value = target.toFixed(2);
+        // FIX: Input Target menggunakan format titik (.)
+        if(activeEl !== 'i-target') document.getElementById('i-target').value = formatDot(target);
+        
         if(activeEl !== 'd-out-name') document.getElementById('d-out-name').value = data[`Outlet_${userSelectedIdx}_Nama`] || "";
         
-        // TAMPILAN AKTUAL menggunakan toFixed(2) agar hasilnya 0.00 bukan 0,00
-        document.getElementById('d-aktual').innerText = aktual.toFixed(2);
+        // FIX: Tampilan Aktual menggunakan format titik (.)
+        document.getElementById('d-aktual').innerText = formatDot(aktual);
         
         document.getElementById('d-sysid').innerText = userSelectedIdx;
         const progress = target > 0 ? Math.min((aktual/target)*100, 100) : 0;
-        document.getElementById('d-progress').innerText = progress.toFixed(2) + "%";
+        
+        // FIX: Progress menggunakan format titik (.)
+        document.getElementById('d-progress').innerText = formatDot(progress) + "%";
         document.getElementById('progress-bar').style.width = progress + "%";
     }
 
