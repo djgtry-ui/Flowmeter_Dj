@@ -30,7 +30,7 @@
 
             </div>
 
-            <h1 class="text-2xl font-bold text-white mb-2">Flowmeter oDashboard</h1>
+            <h1 class="text-2xl font-bold text-white mb-2">Flowmeter vDashboard</h1>
 
             <p class="text-gray-300">Silakan login untuk melanjutkan</p>
 
@@ -125,8 +125,10 @@
                     localStorage.setItem('isLoggedIn', 'true');
                     localStorage.setItem('user_data', JSON.stringify(data.user));
                     
+                    const dashboardUrl = "https://djgtry-ui.github.io/Flowmeter_Dj/status_flowmeter.html";
+    
                     setTimeout(() => {
-                        window.location.href = 'status_flowmeter.html'; 
+                    window.location.assign(dashboardUrl); // .assign lebih paksa daripada .href
                     }, 500);
                 } else {
                     messageDiv.className = 'mt-4 p-3 rounded-lg bg-red-600 text-white';
