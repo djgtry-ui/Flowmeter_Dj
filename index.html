@@ -1,154 +1,205 @@
 <!DOCTYPE html>
+
 <html lang="id">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Flowmeter Dashboard - Login</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
+
 </head>
+
 <body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 min-h-screen flex items-center justify-center">
+
     <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-8 w-full max-w-md border border-white/20">
+
         <div class="text-center mb-8">
+
             <div class="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+
                 <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+
                 </svg>
+
             </div>
+
             <h1 class="text-2xl font-bold text-white mb-2">Flowmeter Dashboard</h1>
+
             <p class="text-gray-300">Silakan login untuk melanjutkan</p>
+
         </div>
+
+        
 
         <form id="loginForm" class="space-y-6">
+
             <div>
+
                 <label for="username" class="block text-sm font-medium text-gray-300 mb-2">Username</label>
+
                 <input type="text" id="username" name="username" required
+
                         class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors">
+
             </div>
+
             
+
             <div>
+
                 <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+
                 <input type="password" id="password" name="password" required
+
                         class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors">
+
             </div>
+
+            
 
             <button type="submit" id="loginBtn"
+
                     class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors">
+
                 Sign In
+
             </button>
+
         </form>
 
-        <div id="manualNav" class="mt-4 hidden">
-            <a href="status_flowmeter.html" 
-               class="block w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center py-3 rounded-lg font-bold shadow-lg animate-pulse">
-                MASUK KE DASHBOARD →
-            </a>
-        </div>
+        
 
         <div class="mt-6 text-center text-sm text-gray-400">
+
             <p>Created By :</p>
+
             <p>Nur Djaya Atmaja</p>
+
         </div>
 
+        
+
         <div id="message" class="mt-4 p-3 rounded-lg hidden text-center text-sm font-semibold"></div>
+
     </div>
 
+
+
 <script>
+
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzpqF-Tp-9rk8uF27HrBBUMO8-qVZqc7ybOE4mEgWnKgmmlGFf9x-UAnxB-3I-RgISR6A/exec";
 
-    // Daftar User Offline (Cadangan)
-    const offlineUsers = [
-        {
-            username: "ie@propanraya.com",
-            password: "ie123",
-            user: { username: "IE Team", akses: { flowmeter: 1, download: 1, history: 1, kontrol: 1 } }
-        }
-    ];
 
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
+
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+
         e.preventDefault();
+
         
+
         const username = document.getElementById('username').value;
+
         const password = document.getElementById('password').value;
+
         const loginBtn = document.getElementById('loginBtn');
+
         const messageDiv = document.getElementById('message');
-        const manualNav = document.getElementById('manualNav');
+
         
-        loginBtn.textContent = 'Memverifikasi...';
+
+        loginBtn.textContent = 'Verifikasi...';
+
         loginBtn.disabled = true;
+
         messageDiv.classList.add('hidden');
 
-        // 1. Cek Offline
-        const localMatch = offlineUsers.find(u => u.username === username && u.password === password);
-        if (localMatch) {
-            handleSuccess(localMatch.user);
-            return;
-        }
-
-        // 2. Request AJAX (Pengganti cURL/Fetch agar stabil di WebView)
-        const finalUrl = `${WEB_APP_URL}?action=login&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&cb=${new Date().getTime()}`;
         
-        const xhr = new XMLHttpRequest();
-        xhr.open("GET", finalUrl, true);
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    try {
-                        const data = JSON.parse(xhr.responseText);
-                        if (data.success) {
-                            handleSuccess(data.user);
-                        } else {
-                            showError(data.message || 'Login Gagal');
-                        }
-                    } catch(e) { showError('Format data server salah'); }
-                } else {
-                    showError('Server Sibuk / Tidak Ada Koneksi');
-                }
+
+        try {
+
+            // Gunakan satu fetch saja tanpa 'no-cors' agar bisa membaca balasan JSON
+
+            const response = await fetch(WEB_APP_URL, {
+
+                method: 'POST',
+
+                headers: {'Content-Type': 'text/plain;charset=utf-8',
+
+                },
+
+                body: JSON.stringify({ username, password })
+
+            });
+
+            
+
+            const data = await response.json();
+
+            
+
+            if (data.success) {
+
+                messageDiv.className = 'mt-4 p-3 rounded-lg bg-emerald-600 text-white';
+
+                messageDiv.textContent = 'Login Berhasil..!';
+
+                messageDiv.classList.remove('hidden');
+
+                
+
+                localStorage.setItem('isLoggedIn', 'true');
+
+                localStorage.setItem('user_data', JSON.stringify(data.user));
+
+                
+
+                setTimeout(() => {
+
+                    window.location.href = 'status_flowmeter.html'; 
+
+                }, 1000);
+
+            } else {
+
+                messageDiv.className = 'mt-4 p-3 rounded-lg bg-red-600 text-white';
+
+                messageDiv.textContent = data.message;
+
+                messageDiv.classList.remove('hidden');
+
             }
-        };
-        xhr.send();
 
-        function handleSuccess(userData) {
-            messageDiv.className = 'mt-4 p-3 rounded-lg bg-emerald-600 text-white text-center';
-            messageDiv.textContent = 'Login Berhasil!';
-            messageDiv.classList.remove('hidden');
             
-            localStorage.setItem('isLoggedIn', 'true');
-            localStorage.setItem('user_data', JSON.stringify(userData));
-            
-            // Munculkan tombol manual jika otomatis stuck
-            manualNav.classList.remove('hidden');
-            loginBtn.classList.add('hidden');
 
-            // Coba redirect otomatis
-            setTimeout(() => {
-                window.location.href = 'status_flowmeter.html';
-            }, 800);
-        }
+        } catch (error) {
 
-        function showError(msg) {
-            messageDiv.className = 'mt-4 p-3 rounded-lg bg-red-600 text-white text-center';
-            messageDiv.textContent = msg;
+            messageDiv.className = 'mt-4 p-3 rounded-lg bg-amber-600 text-white';
+
+            messageDiv.textContent = 'Gagal terhubung ke API. Pastikan Anda sudah Deploy Ulang sebagai "New Version".';
+
             messageDiv.classList.remove('hidden');
-            loginBtn.disabled = false;
+
+            console.error("Fetch Error:", error);
+
+        } finally {
+
             loginBtn.textContent = 'Sign In';
+
+            loginBtn.disabled = false;
+
         }
+
     });
 
-    // Auto Login dari Blok MIT App
-    window.onload = function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const userAuto = urlParams.get('user_auto');
-        if (userAuto) {
-            try {
-                const data = JSON.parse(decodeURIComponent(userAuto));
-                if (data.success) {
-                    localStorage.setItem('isLoggedIn', 'true');
-                    localStorage.setItem('user_data', JSON.stringify(data.user));
-                    window.location.replace('status_flowmeter.html');
-                }
-            } catch (e) {}
-        }
-    };
 </script>
+
 </body>
+
 </html>
