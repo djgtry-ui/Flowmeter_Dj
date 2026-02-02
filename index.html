@@ -30,7 +30,7 @@
 
             </div>
 
-            <h1 class="text-2xl font-bold text-white mb-2">Flowmeter xDashboard</h1>
+            <h1 class="text-2xl font-bold text-white mb-2">Flowmeter yDashboard</h1>
 
             <p class="text-gray-300">Silakan login untuk melanjutkan</p>
 
@@ -107,18 +107,16 @@
         loginBtn.disabled = true;
         messageDiv.classList.add('hidden');
 
-        // Menggunakan URLSearchParams agar lebih aman di Android WebView
-        const params = new URLSearchParams({
-            action: 'login',
-            username: username,
-            password: password
-        });
+        // Gunakan URLSearchParams untuk GET request
+        const finalUrl = `${WEB_APP_URL}?action=login&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
 
-        // Gunakan mode 'no-cors' atau biarkan default, 
-        // tapi panggil via fetch GET untuk menghindari pre-flight CORS
-        fetch(`${WEB_APP_URL}?${params.toString()}`)
-            .then(response => response.json())
-            .then(data => {
+        // Gunakan metode klasik yang lebih 'sakti' di WebViewer APK
+        const xhr = new XMLHttpRequest();
+        xhr.open("GET", finalUrl, true);
+        
+        xhr.onload = function () {
+            if (xhr.status >= 200 && xhr.status < 400) {
+                const data = JSON.parse(xhr.responseText);
                 if (data.success) {
                     messageDiv.className = 'mt-4 p-3 rounded-lg bg-emerald-600 text-white';
                     messageDiv.textContent = 'Login Berhasil..!';
@@ -135,17 +133,29 @@
                     messageDiv.textContent = data.message || 'Username/Password Salah';
                     messageDiv.classList.remove('hidden');
                 }
-            })
-            .catch(error => {
-                messageDiv.className = 'mt-4 p-3 rounded-lg bg-amber-600 text-white';
-                messageDiv.textContent = 'Koneksi Gagal. Cek Internet Anda.';
-                messageDiv.classList.remove('hidden');
-                console.error("Fetch Error:", error);
-            })
-            .finally(() => {
-                loginBtn.textContent = 'Sign In';
-                loginBtn.disabled = false;
-            });
+            } else {
+                showError("Gagal merespon (Server Error)");
+            }
+            resetBtn();
+        };
+
+        xhr.onerror = function () {
+            showError("Koneksi Diblokir APK. Gunakan HTTPS & Cek Izin.");
+            resetBtn();
+        };
+
+        xhr.send();
+
+        function showError(msg) {
+            messageDiv.className = 'mt-4 p-3 rounded-lg bg-amber-600 text-white';
+            messageDiv.textContent = msg;
+            messageDiv.classList.remove('hidden');
+        }
+
+        function resetBtn() {
+            loginBtn.textContent = 'Sign In';
+            loginBtn.disabled = false;
+        }
     });
 </script>
 
