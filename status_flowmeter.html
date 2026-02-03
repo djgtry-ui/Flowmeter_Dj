@@ -34,35 +34,30 @@
             window.location.href = 'index.html';
         }
 
-        // --- FITUR AUTO LOGOUT (IDLE TIMEOUT) ---
         let idleTime = 0;
-        const maxIdleTime = 10; // Batas waktu dalam MENIT (Ubah angka ini sesuai kebutuhan)
+        const maxIdleTime = 10; 
 
-        function resetTimer() {
-            idleTime = 0; 
-        }
+        function resetTimer() { idleTime = 0; }
 
-        // Deteksi aktivitas user
         window.onload = resetTimer;
         window.onmousemove = resetTimer;
-        window.onmousedown = resetTimer; // Klik mouse
-        window.ontouchstart = resetTimer; // Layar sentuh
+        window.onmousedown = resetTimer; 
+        window.ontouchstart = resetTimer; 
         window.onclick = resetTimer;     
-        window.onkeydown = resetTimer;   // Ketik keyboard
+        window.onkeydown = resetTimer;   
 
-        // Jalankan pengecekan setiap 1 menit
         setInterval(function() {
             idleTime++;
             if (idleTime >= maxIdleTime) {
                 alert("Sesi Anda berakhir karena tidak ada aktivitas selama " + maxIdleTime + " menit.");
                 logoutUser();
             }
-        }, 60000); // 60.000 ms = 1 menit
+        }, 60000); 
     </script>
 
     <div class="container mx-auto">
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-white mb-2">Realtime Status Flowmeter</h1>
+            <h1 class="text-3xl font-bold text-white mb-2">Realtime Status xFlowmeter</h1>
             <div id="currentTime" class="text-white text-lg font-mono mb-1">00:00:00</div>
             <p id="welcomeUser" class="text-blue-300 opacity-80 uppercase tracking-widest text-[10px]">Loading User...</p>
             <p id="lastUpdate" class="text-emerald-400 text-[9px] mt-2 italic">Last Update: Waiting for data...</p>
@@ -126,8 +121,8 @@
 
         if (userData) {
             document.getElementById('welcomeUser').innerText = `USER: ${userData.username} | MONITORING SYSTEM DATA RESULT`;
-            if(userData.akses.history == 1 || userData.akses.history == "1") document.getElementById('btn-history').classList.remove('hidden');
-            if(userData.akses.kontrol == 1 || userData.akses.kontrol == "1") document.getElementById('btn-transaksi').classList.remove('hidden');
+            if(userData.akses && (userData.akses.history == 1 || userData.akses.history == "1")) document.getElementById('btn-history').classList.remove('hidden');
+            if(userData.akses && (userData.akses.kontrol == 1 || userData.akses.kontrol == "1")) document.getElementById('btn-transaksi').classList.remove('hidden');
         }
 
         const API_URL = 'https://plantopr.propanraya.com/api/flowmeter/result_flowmeter';
@@ -156,17 +151,24 @@
                 );
 
                 const results = await Promise.all(fetchPromises);
-                const validData = results
-                    .filter(res => res.status === 'success' && res.data)
-                    .map(res => res.data);
-
-                document.getElementById('totalMachines').innerText = validData.length;
                 
-                const now = new Date();
-                document.getElementById('lastUpdate').innerText = `Last Update: ${now.toLocaleTimeString('id-ID')} (Every 15s)`;
+                // --- PERBAIKAN LOGIKA DISINI ---
+                const validData = results.map((res, index) => {
+                    // Cek jika data ada di .data atau objek langsung
+                    let actualData = res.data ? (Array.isArray(res.data) ? res.data[0] : res.data) : res;
+                    // Jika data valid, kembalikan, jika tidak null
+                    return (actualData && typeof actualData === 'object') ? actualData : null;
+                }).filter(item => item !== null);
 
-                renderTable(validData);
-                renderChart(validData);
+                if (validData.length > 0) {
+                    document.getElementById('totalMachines').innerText = validData.length;
+                    const now = new Date();
+                    document.getElementById('lastUpdate').innerText = `Last Update: ${now.toLocaleTimeString('id-ID')} (Every 15s)`;
+                    renderTable(validData);
+                    renderChart(validData);
+                } else {
+                    document.getElementById('lastUpdate').innerText = "Last Update: Data Empty";
+                }
             } catch (error) {
                 console.error("Error Fetching API:", error);
                 document.getElementById('lastUpdate').innerText = "Last Update: Connection Error";
@@ -177,7 +179,7 @@
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             data.forEach(item => {
-                const aktifOutletIdx = item.Aktif_Outlet || "0";
+                const aktifOutletIdx = item.Aktif_Outlet || "1";
                 const outletNama = item[`Outlet_${aktifOutletIdx}_Nama`] || "-";
                 const targetAktif = item[`Outlet_${aktifOutletIdx}_Target`] || 0;
                 tbody.innerHTML += `
@@ -195,7 +197,7 @@
         }
 
         function renderChart(data) {
-            const labels = data.map(item => [item.Nama_ID, item.Nama_Material || 'N/A']);
+            const labels = data.map(item => [item.Nama_ID || 'M-'+item.id_mesin, item.Nama_Material || 'N/A']);
             const stockValues = data.map(item => parseFloat(item.Stock) || 0);
             if (stockChart) stockChart.destroy();
             const ctx = document.getElementById('stockChart').getContext('2d');
