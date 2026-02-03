@@ -1,96 +1,55 @@
 <!DOCTYPE html>
-
 <html lang="id">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Flowmeter Dashboard - Login</title>
-
     <script src="https://cdn.tailwindcss.com"></script>
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
-
 <body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 min-h-screen flex items-center justify-center">
-
     <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-8 w-full max-w-md border border-white/20">
-
         <div class="text-center mb-8">
-
             <div class="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-
                 <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-
                 </svg>
-
             </div>
-
-            <h1 class="text-2xl font-bold text-white mb-2">Flowmeter Dashboard</h1>
-
+            <h1 class="text-2xl font-bold text-white mb-2">Flowmeter wDashboard</h1>
             <p class="text-gray-300">Silakan login untuk melanjutkan</p>
-
         </div>
-
-        
 
         <form id="loginForm" class="space-y-6">
-
             <div>
-
                 <label for="username" class="block text-sm font-medium text-gray-300 mb-2">Username</label>
-
                 <input type="text" id="username" name="username" required
-
                         class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors">
-
             </div>
-
-            
-
             <div>
-
                 <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
-
                 <input type="password" id="password" name="password" required
-
                         class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors">
-
             </div>
-
-            
-
             <button type="submit" id="loginBtn"
-
                     class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors">
-
                 Sign In
-
             </button>
-
         </form>
-
-        
-
-        <div class="mt-6 text-center text-sm text-gray-400">
-
-            <p>Created By :</p>
-
-            <p>Nur Djaya Atmaja</p>
-
-        </div>
-
-        
 
         <div id="message" class="mt-4 p-3 rounded-lg hidden text-center text-sm font-semibold"></div>
 
+        <div id="navArea" class="hidden mt-6">
+            <a href="status_flowmeter.html" 
+               class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-3 shadow-lg border-b-4 border-indigo-800 active:border-b-0 active:translate-y-1">
+                <i class="fas fa-chart-line"></i> MASUK KE DASHBOARD
+            </a>
+        </div>
+
+        <div class="mt-6 text-center text-sm text-gray-400">
+            <p>Created By :</p>
+            <p>Nur Djaya Atmaja</p>
+        </div>
     </div>
-
-
 
 <script>
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzpqF-Tp-9rk8uF27HrBBUMO8-qVZqc7ybOE4mEgWnKgmmlGFf9x-UAnxB-3I-RgISR6A/exec";
@@ -102,15 +61,15 @@
         const password = document.getElementById('password').value;
         const loginBtn = document.getElementById('loginBtn');
         const messageDiv = document.getElementById('message');
+        const navArea = document.getElementById('navArea');
+        const loginForm = document.getElementById('loginForm');
         
         loginBtn.textContent = 'Verifikasi...';
         loginBtn.disabled = true;
         messageDiv.classList.add('hidden');
 
-        // Gunakan URLSearchParams untuk GET request
         const finalUrl = `${WEB_APP_URL}?action=login&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
 
-        // Gunakan metode klasik yang lebih 'sakti' di WebViewer APK
         const xhr = new XMLHttpRequest();
         xhr.open("GET", finalUrl, true);
         
@@ -118,37 +77,35 @@
             if (xhr.status >= 200 && xhr.status < 400) {
                 const data = JSON.parse(xhr.responseText);
                 if (data.success) {
+                    // Tampilkan Pesan Sukses
                     messageDiv.className = 'mt-4 p-3 rounded-lg bg-emerald-600 text-white';
-                    messageDiv.textContent = 'Login Berhasil..!';
+                    messageDiv.textContent = 'Verifikasi Berhasil!';
                     messageDiv.classList.remove('hidden');
+                    
+                    // Sembunyikan Form & Tampilkan Tombol Navigasi Indigo
+                    loginForm.classList.add('hidden');
+                    navArea.classList.remove('hidden');
                     
                     localStorage.setItem('isLoggedIn', 'true');
                     localStorage.setItem('user_data', JSON.stringify(data.user));
+
                     if (window.AppInventor) {
-                    window.AppInventor.setWebViewString("PINDAH_DASHBOARD");
-                    } else {
-                    // Cadangan jika dibuka lewat browser biasa
-                    window.location.href = 'status_flowmeter.html';
-                                      
-                    const dashboardUrl = "https://djgtry-ui.github.io/Flowmeter_Dj/status_flowmeter.html";
-    
-                    setTimeout(() => {
-                    window.location.assign(dashboardUrl); // .assign lebih paksa daripada .href
-                        }, 500);
-                    }    
+                        window.AppInventor.setWebViewString("PINDAH_DASHBOARD");
+                    }
                 } else {
                     messageDiv.className = 'mt-4 p-3 rounded-lg bg-red-600 text-white';
                     messageDiv.textContent = data.message || 'Username/Password Salah';
                     messageDiv.classList.remove('hidden');
+                    resetBtn();
                 }
             } else {
                 showError("Gagal merespon (Server Error)");
+                resetBtn();
             }
-            resetBtn();
         };
 
         xhr.onerror = function () {
-            showError("Koneksi Diblokir APK. Gunakan HTTPS & Cek Izin.");
+            showError("Koneksi Error / Diblokir.");
             resetBtn();
         };
 
@@ -168,5 +125,4 @@
 </script>
 
 </body>
-
 </html>
