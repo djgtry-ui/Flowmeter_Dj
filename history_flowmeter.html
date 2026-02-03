@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riwayat Transfer Bahan Flowmeter</title>
+    <title>Riwayat Transfer Bahan - Flowmeter</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -11,93 +11,67 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { background-color: #0b1437; color: #e2e8f0; font-family: 'Inter', sans-serif; }
-        .scroll-container {
-            max-height: 550px; 
-            overflow-y: auto;
-            border-bottom-left-radius: 0.5rem;
-            border-bottom-right-radius: 0.5rem;
-            background-color: #111c44;
-        }
-        .scroll-container::-webkit-scrollbar { width: 8px; }
-        .scroll-container::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 4px; }
+        .scroll-container { max-height: 500px; overflow-y: auto; background-color: #111c44; }
         .table-fixed-head thead th {
-            position: sticky; top: 0;
-            background-color: #1b254b;
-            z-index: 10;
-            border-bottom: 2px solid #3b82f6;
-            white-space: nowrap;
-            text-align: center;
-            padding: 12px 8px;
-            font-size: 10px;
-            text-transform: uppercase;
+            position: sticky; top: 0; background-color: #1b254b; z-index: 10;
+            border-bottom: 2px solid #3b82f6; padding: 12px 8px; font-size: 10px;
         }
-        td { padding: 10px 8px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .card-custom { background: #111c44; border: 1px solid #1b254b; }
+        input, select { background: #0b1437 !important; border: 1px solid #1b254b !important; color: white !important; }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <script>
+        // Cek Login & Data User
         const userData = JSON.parse(localStorage.getItem('user_data'));
         if (!localStorage.getItem('isLoggedIn') || !userData) {
             window.location.href = 'index.html';
         }
 
-        // FITUR AUTO LOGOUT (IDLE 1 MENIT)
+        // Auto Logout 1 Menit (Idle)
         let idleTime = 0;
-        function resetTimer() { idleTime = 0; }
-        window.onmousemove = resetTimer;
-        window.ontouchstart = resetTimer;
-        window.onclick = resetTimer;
-        window.onkeydown = resetTimer;
+        const resetTimer = () => { idleTime = 0; };
+        document.onmousemove = resetTimer;
+        document.ontouchstart = resetTimer;
+        document.onclick = resetTimer;
 
-        setInterval(function() {
+        setInterval(() => {
             idleTime++;
             if (idleTime >= 60) {
-                Swal.fire({
-                    title: 'Sesi Berakhir',
-                    text: 'Anda telah idle terlalu lama.',
-                    icon: 'warning',
-                    confirmButtonText: 'OK'
-                }).then(() => { logoutUser(); });
+                localStorage.clear();
+                window.location.href = 'index.html';
             }
         }, 1000);
-
-        function logoutUser() {
-            localStorage.clear();
-            window.location.href = 'index.html';
-        }
     </script>
 
     <div class="max-w-7xl mx-auto">
-        <header class="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
-            <div class="text-left">
-                <h1 class="text-2xl font-bold uppercase tracking-widest text-white flex items-center gap-3">
-                    <i class="fa-solid fa-clock-rotate-left text-blue-500"></i>
-                    Riwayat <span class="text-blue-500">Transfer</span>
+        <header class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+            <div>
+                <h1 class="text-xl font-bold uppercase text-white flex items-center gap-2">
+                    <i class="fa-solid fa-history text-blue-500"></i> Riwayat <span class="text-blue-500">Log</span>
                 </h1>
-                <p class="text-slate-500 text-[10px] font-bold mt-1 uppercase tracking-widest">Operator: <span id="op-name" class="text-blue-400">---</span></p>
+                <p class="text-[10px] text-slate-500 font-bold uppercase italic">Operator: <span id="op-name" class="text-blue-400">---</span></p>
             </div>
             <div class="flex gap-2">
-                <a href="status_flowmeter.html" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded shadow-lg text-xs font-bold text-white transition-all italic uppercase">🏠 Dashboard</a>
-                <a href="transaksi_flowmeter.html" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded shadow-lg text-xs font-bold text-white transition-all italic uppercase">🎮 Transaksi</a>
-                <button onclick="logoutUser()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded shadow-lg text-xs font-bold text-white transition-all italic uppercase">🔓 Logout</button>
+                <a href="status_flowmeter.html" class="bg-indigo-600 px-3 py-2 rounded text-[10px] font-bold text-white italic uppercase shadow-lg">🏠 Dash</a>
+                <a href="transaksi_flowmeter.html" class="bg-blue-600 px-3 py-2 rounded text-[10px] font-bold text-white italic uppercase shadow-lg">🎮 Panel</a>
             </div>
         </header>
 
-        <div class="card-custom rounded-lg p-6 mb-6 shadow-2xl border-l-4 border-blue-500">
+        <div class="card-custom rounded-lg p-5 mb-6 border-l-4 border-blue-500 shadow-xl">
             <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                 <div>
-                    <label class="block text-[10px] font-bold mb-2 text-slate-500 uppercase">Tanggal Mulai:</label>
-                    <input type="date" id="startDate" class="w-full bg-[#0b1437] border border-slate-700 rounded px-3 py-2 text-sm text-white focus:border-blue-500">
+                    <label class="block text-[9px] font-bold mb-1 text-slate-500 uppercase">Dari Tanggal:</label>
+                    <input type="date" id="startDate" class="w-full rounded px-3 py-2 text-sm">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold mb-2 text-slate-500 uppercase">Tanggal Akhir:</label>
-                    <input type="date" id="endDate" class="w-full bg-[#0b1437] border border-slate-700 rounded px-3 py-2 text-sm text-white focus:border-blue-500">
+                    <label class="block text-[9px] font-bold mb-1 text-slate-500 uppercase">Sampai Tanggal:</label>
+                    <input type="date" id="endDate" class="w-full rounded px-3 py-2 text-sm">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold mb-2 text-slate-500 uppercase">Pilih Mesin:</label>
-                    <select id="fmFilter" class="w-full bg-[#0b1437] border border-slate-700 rounded px-3 py-2 text-sm text-white">
+                    <label class="block text-[9px] font-bold mb-1 text-slate-500 uppercase">Filter Mesin:</label>
+                    <select id="fmFilter" class="w-full rounded px-3 py-2 text-sm">
                         <option value="">Semua Mesin</option>
                         <option value="1">Mesin 1 (TH SMT)</option>
                         <option value="2">Mesin 2 (TH P-01)</option>
@@ -107,47 +81,45 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold mb-2 text-slate-500 uppercase">Cari Data:</label>
-                    <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="PO atau Material..." class="w-full bg-[#0b1437] border border-slate-700 rounded px-3 py-2 text-sm text-white focus:border-blue-500">
+                    <label class="block text-[9px] font-bold mb-1 text-slate-500 uppercase">Pencarian:</label>
+                    <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="Cari PO/Material..." class="w-full rounded px-3 py-2 text-sm focus:border-blue-500 outline-none">
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="fetchData()" class="bg-emerald-600 hover:bg-emerald-700 px-3 py-2 rounded text-xs font-bold flex-1 text-white transition-all flex items-center justify-center gap-2 uppercase">
-                        <i class="fa-solid fa-sync-alt"></i> Sync
+                    <button onclick="fetchData()" class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded text-xs font-bold text-white flex-1 flex items-center justify-center gap-2 uppercase transition-all">
+                        <i class="fa-solid fa-sync"></i> Sync
                     </button>
-                    <button onclick="downloadExcel()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-xs font-bold text-white flex items-center justify-center">
-                        <i class="fa-solid fa-file-excel"></i>
+                    <button onclick="downloadExcel()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-xs font-bold text-white flex items-center justify-center shadow-lg transition-all">
+                        <i class="fa-solid fa-file-download"></i>
                     </button>
                 </div>
             </div>
         </div>
 
         <div class="card-custom rounded-lg shadow-2xl overflow-hidden">
-            <div class="p-4 flex flex-wrap justify-between items-center bg-[#1b254b] border-b border-white/5">
-                <span id="infoData" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Menunggu sinkronisasi...</span>
-                <div class="flex items-center gap-2">
-                    <button onclick="changePage('first')" class="bg-[#0b1437] hover:bg-blue-600 px-3 py-1 rounded text-[10px] font-bold transition uppercase">Awal</button>
-                    <span id="pageIndicator" class="text-blue-500 text-[10px] font-black px-2">HAL 1</span>
-                    <button onclick="changePage('next')" class="bg-[#0b1437] hover:bg-blue-600 px-3 py-1 rounded text-[10px] font-bold transition uppercase">Next</button>
+            <div class="p-3 flex justify-between items-center bg-[#1b254b] border-b border-white/5">
+                <span id="infoData" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic">Siap Menampilkan Data</span>
+                <div id="pagination" class="flex items-center gap-2">
+                    <button onclick="changePage(-1)" class="bg-[#0b1437] hover:bg-blue-600 px-3 py-1 rounded text-[10px] font-bold uppercase">Prev</button>
+                    <span id="pageIndicator" class="text-blue-500 text-[10px] font-black mx-1">HAL 1</span>
+                    <button onclick="changePage(1)" class="bg-[#0b1437] hover:bg-blue-600 px-3 py-1 rounded text-[10px] font-bold uppercase">Next</button>
                 </div>
             </div>
 
-            <div class="scroll-container">
-                <table class="w-full text-left text-xs table-fixed-head" id="mainTable">
+            <div class="scroll-container no-scrollbar">
+                <table class="w-full text-[11px] text-left" id="mainTable">
                     <thead>
                         <tr class="text-slate-400">
-                            <th style="width: 80px;">LOG ID</th>
+                            <th class="w-20">LOG ID</th>
                             <th>WAKTU</th>
-                            <th style="width: 60px;">MSN</th>
-                            <th>JALUR/NAMA ID</th>
+                            <th class="text-center">MESIN</th>
                             <th>MATERIAL</th>
                             <th>NO. PO</th>
-                            <th class="text-right pr-4">TARGET</th>
-                            <th class="text-right pr-4 text-green-500">AKTUAL</th>
-                            <th>KET</th>
+                            <th class="text-right">TARGET</th>
+                            <th class="text-right text-emerald-400">AKTUAL</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="9" class="p-20 text-center italic opacity-30 text-lg uppercase tracking-widest">Silakan klik SYNC untuk memuat data.</td></tr>
+                        <tr><td colspan="7" class="p-10 text-center italic opacity-30 text-xs uppercase tracking-widest">Gunakan tombol Sync untuk menarik data.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -155,145 +127,134 @@
     </div>
 
     <script>
-        const BASE_API_URL = "https://plantopr.propanraya.com/api/flowmeter/log_flowmeter";
-        const AUTH_HEADER = "Basic " + btoa("nurdjaya.atmaja@propanraya.com:iepropan");
+        const API_URL = "https://plantopr.propanraya.com/api/flowmeter/log_flowmeter";
+        const API_AUTH = "Basic " + btoa("nurdjaya.atmaja@propanraya.com:iepropan");
         
         let allRawData = [];
         let currentPage = 1;
         const rowsPerPage = 50;
 
         window.onload = () => {
-            if(userData) document.getElementById('op-name').innerText = userData.username;
+            if(userData) document.getElementById('op-name').innerText = userData.username.toUpperCase();
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('startDate').value = today;
             document.getElementById('endDate').value = today;
         };
-
-        function formatDisplayNum(val) {
-            let num = parseFloat(val) || 0;
-            return num.toFixed(2);
-        }
 
         async function fetchData() {
             const start = document.getElementById('startDate').value;
             const end = document.getElementById('endDate').value;
             const fm = document.getElementById('fmFilter').value;
             const tbody = document.getElementById('tableBody');
-            const info = document.getElementById('infoData');
 
-            info.innerText = "⏳ PROCESSING DATA...";
-            tbody.innerHTML = '<tr><td colspan="9" class="p-20 text-center"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-blue-500"></i></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center"><i class="fa-solid fa-circle-notch fa-spin text-xl text-blue-500"></i></td></tr>';
 
-            let finalUrl = `${BASE_API_URL}?tanggal_mulai=${start}&tanggal_akhir=${end}`;
-            if(fm) finalUrl += `&id_mesin=${fm}`;
+            let url = `${API_URL}?tanggal_mulai=${start}&tanggal_akhir=${end}`;
+            if(fm) url += `&id_mesin=${fm}`;
 
             try {
-                const response = await fetch(finalUrl, {
-                    method: 'GET',
-                    headers: { 'Authorization': AUTH_HEADER }
-                });
-                const result = await response.json();
-                allRawData = Array.isArray(result) ? result : (result.data || []);
-                allRawData.sort((a, b) => parseInt(b.log_id || 0) - parseInt(a.log_id || 0));
+                const res = await fetch(url, { headers: { 'Authorization': API_AUTH } });
+                const json = await res.json();
+                allRawData = Array.isArray(json) ? json : (json.data || []);
+                allRawData.sort((a, b) => b.log_id - a.log_id);
                 
                 currentPage = 1;
                 renderTable();
             } catch (e) {
-                Swal.fire('Error', 'Gagal mengambil data dari server.', 'error');
+                Swal.fire({ icon: 'error', title: 'Gagal', text: 'Koneksi ke server terputus.' });
             }
         }
 
-        function getFilteredUniqueData() {
+        function getFilteredData() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const seen = new Set();
             return allRawData.filter(item => {
-                const uniqueKey = `${item.id_mesin}-${item.NoPO}-${item.Target}-${item.Aktual}`;
-                const searchStr = `${item.NoPO} ${item.Nama_Material}`.toLowerCase();
-                if (seen.has(uniqueKey) || !searchStr.includes(search)) return false;
-                seen.add(uniqueKey);
+                const key = `${item.id_mesin}-${item.NoPO}-${item.Aktual}`;
+                const match = `${item.NoPO} ${item.Nama_Material}`.toLowerCase().includes(search);
+                if (seen.has(key) || !match) return false;
+                seen.add(key);
                 return true;
             });
         }
 
         function renderTable() {
             const tbody = document.getElementById('tableBody');
-            const filtered = getFilteredUniqueData();
+            const data = getFilteredData();
             const startIdx = (currentPage - 1) * rowsPerPage;
-            const pageData = filtered.slice(startIdx, startIdx + rowsPerPage);
+            const paginated = data.slice(startIdx, startIdx + rowsPerPage);
             
             tbody.innerHTML = '';
-            if(pageData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="p-20 text-center opacity-50 uppercase font-bold">Data tidak ditemukan.</td></tr>';
-                document.getElementById('infoData').innerText = "0 BARIS DITEMUKAN";
+            if(paginated.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center opacity-40 italic">Data Tidak Tersedia</td></tr>';
                 return;
             }
 
-            pageData.forEach(item => {
+            paginated.forEach(row => {
                 tbody.innerHTML += `
-                    <tr class="hover:bg-blue-500/10">
-                        <td class="text-slate-500 font-mono text-[10px]">${item.log_id}</td>
-                        <td class="text-slate-400 text-[10px]">${item.log_timestamp || item.created_at}</td>
-                        <td class="text-blue-500 font-black">${item.id_mesin}</td>
-                        <td class="text-indigo-300 font-bold text-left text-[10px]">${item.Nama_ID || '-'}</td>
-                        <td class="font-bold text-slate-200 text-left text-[10px]">${item.Nama_Material || '-'}</td>
-                        <td class="text-slate-400 font-mono text-[10px]">${item.NoPO || '-'}</td>
-                        <td class="text-right pr-4 font-mono text-yellow-500">${formatDisplayNum(item.Target)}</td>
-                        <td class="text-right pr-4 font-mono text-green-500">${formatDisplayNum(item.Aktual)}</td>
-                        <td class="text-blue-400 font-bold text-[10px] italic text-left">${item.keterangan || '-'}</td>
+                    <tr class="border-b border-white/5 hover:bg-blue-500/5 transition-colors">
+                        <td class="p-3 text-slate-500 font-mono">${row.log_id}</td>
+                        <td class="p-3 text-slate-400 font-bold">${row.log_timestamp || row.created_at}</td>
+                        <td class="p-3 text-center text-blue-400 font-black">${row.id_mesin}</td>
+                        <td class="p-3 font-semibold text-slate-200">${row.Nama_Material || '-'}</td>
+                        <td class="p-3 text-slate-400">${row.NoPO || '-'}</td>
+                        <td class="p-3 text-right font-mono text-yellow-500">${parseFloat(row.Target || 0).toFixed(2)}</td>
+                        <td class="p-3 text-right font-mono text-emerald-400 font-bold">${parseFloat(row.Aktual || 0).toFixed(2)}</td>
                     </tr>`;
             });
 
-            const totalPages = Math.ceil(filtered.length / rowsPerPage) || 1;
+            const totalPages = Math.ceil(data.length / rowsPerPage) || 1;
             document.getElementById('pageIndicator').innerText = `HAL ${currentPage} / ${totalPages}`;
-            document.getElementById('infoData').innerText = `${filtered.length} BARIS DATA DITEMUKAN`;
+            document.getElementById('infoData').innerText = `${data.length} BARIS DATA DITEMUKAN`;
         }
 
-        function changePage(action) {
-            const filtered = getFilteredUniqueData();
-            const totalPages = Math.ceil(filtered.length / rowsPerPage);
-            if (action === 'next' && currentPage < totalPages) currentPage++;
-            else if (action === 'first') currentPage = 1;
+        function changePage(dir) {
+            currentPage += dir;
+            if (currentPage < 1) currentPage = 1;
             renderTable();
         }
 
         function downloadExcel() {
             if (userData.akses.download != 1) {
-                Swal.fire('Akses Ditolak', 'Izin download tidak aktif.', 'error');
+                Swal.fire({ icon: 'error', title: 'Akses Ditolak', text: 'Anda tidak memiliki izin download.' });
                 return;
             }
 
-            const dataToDownload = getFilteredUniqueData();
+            const dataToDownload = getFilteredData();
             if (dataToDownload.length === 0) {
-                Swal.fire('Info', 'Tidak ada data untuk diunduh.', 'info');
+                Swal.fire({ icon: 'warning', title: 'Kosong', text: 'Tidak ada data untuk didownload.' });
                 return;
             }
 
-            const worksheetData = dataToDownload.map(item => ({
-                "LOG ID": item.log_id,
-                "WAKTU": item.log_timestamp,
-                "MESIN": item.id_mesin,
-                "MATERIAL": item.Nama_Material,
-                "PO": item.NoPO,
-                "TARGET": parseFloat(item.Target),
-                "AKTUAL": parseFloat(item.Aktual)
-            }));
+            // Tentukan Nama File Dinamis
+            const tglStart = document.getElementById('startDate').value || 'start';
+            const tglEnd = document.getElementById('endDate').value || 'end';
+            const fileName = `Log_Dj_Flowmeter_${tglStart}_to_${tglEnd}.xlsx`;
 
-            const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Log");
+            try {
+                const wsData = dataToDownload.map(item => ({
+                    "LOG ID": item.log_id,
+                    "WAKTU": item.log_timestamp,
+                    "MESIN": item.id_mesin,
+                    "MATERIAL": item.Nama_Material,
+                    "NO PO": item.NoPO,
+                    "TARGET": parseFloat(item.Target || 0),
+                    "AKTUAL": parseFloat(item.Aktual || 0)
+                }));
 
-            if (window.AppInventor) {
-                // KIRIM DATA BASE64 KE APK
-                const b64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
-                window.AppInventor.setWebViewString("DOWNLOAD_EXCEL|" + b64);
-                Swal.fire({
-                    title: 'Memproses...',
-                    text: 'Data dikirim ke sistem download HP.',
-                    icon: 'success',
-                    timer: 2000
-                });
-            } else {
-                XLSX.writeFile(workbook, `Log_Flowmeter_${new Date().getTime()}.xlsx`);
+                const ws = XLSX.utils.json_to_sheet(wsData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "History_Log");
+
+                if (window.AppInventor) {
+                    // Kirim ke MIT App Inventor: DOWNLOAD_EXCEL | NAMA_FILE | BASE64
+                    const b64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+                    window.AppInventor.setWebViewString(`DOWNLOAD_EXCEL|${fileName}|${b64}`);
+                    Swal.fire({ icon: 'success', title: 'Memproses', text: 'Perintah download dikirim ke sistem.', timer: 1500, showConfirmButton: false });
+                } else {
+                    XLSX.writeFile(wb, fileName);
+                }
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal mengonversi data ke Excel.' });
             }
         }
     </script>
