@@ -8,37 +8,30 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { background-color: #0b1437; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        body { background-color: #0b1437; color: #e2e8f0; font-family: 'Inter', sans-serif; margin: 0; }
         .scroll-container { max-height: 500px; overflow-y: auto; background-color: #111c44; }
         .card-custom { background: #111c44; border: 1px solid #1b254b; }
         input, select { background: #0b1437 !important; border: 1px solid #1b254b !important; color: white !important; }
-        table { border-collapse: collapse; width: 100%; min-width: 700px; }
-        .table-head-sticky thead th { position: sticky; top: 0; background: #1b254b; z-index: 5; border-bottom: 2px solid #3b82f6; }
+        table { border-collapse: collapse; width: 100%; min-width: 750px; }
+        .table-head-sticky thead th { 
+            position: sticky; top: 0; background: #1b254b; z-index: 20; 
+            border-bottom: 2px solid #3b82f6; padding: 12px 8px;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="p-4 md:p-8">
-
-    <script>
-        // --- 1. SESSION & USER DATA (IMMEDIATE) ---
-        let userData = null;
-        try {
-            userData = JSON.parse(localStorage.getItem('user_data'));
-        } catch(e) { console.log("Storage error"); }
-
-        if (!localStorage.getItem('isLoggedIn')) {
-            window.location.href = 'index.html';
-        }
-    </script>
 
     <div class="max-w-7xl mx-auto">
         <header class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
             <div>
                 <h1 class="text-xl font-bold uppercase text-white flex items-center gap-2">
-                    <i class="fa-solid fa-history text-blue-500"></i> wRiwayat <span class="text-blue-500">Log</span>
+                    <i class="fa-solid fa-history text-blue-500"></i> Riwayat <span class="text-blue-500">Log</span>
                 </h1>
-                <p id="welcomeUser" class="text-[10px] text-slate-500 font-bold uppercase italic">Operator: Loading...</p>
+                <p id="welcomeUser" class="text-[10px] text-slate-500 font-bold uppercase italic">Operator: LOADING...</p>
             </div>
             <div class="flex gap-2">
                 <a href="status_flowmeter.html" class="bg-indigo-600 px-3 py-2 rounded text-[10px] font-bold text-white italic uppercase shadow-lg border-b-2 border-indigo-900">🏠 Dashboard</a>
@@ -58,19 +51,19 @@
                     <input type="date" id="endDate" class="w-full rounded px-3 py-2 text-sm">
                 </div>
                 <div>
-                    <label class="block text-[9px] font-bold mb-1 text-slate-500 uppercase">Mesin:</label>
+                    <label class="block text-[9px] font-bold mb-1 text-slate-500 uppercase">Pilih Mesin:</label>
                     <select id="fmFilter" class="w-full rounded px-3 py-2 text-sm">
-                        <option value="">Semua</option>
-                        <option value="1">Mesin 1</option>
-                        <option value="2">Mesin 2</option>
-                        <option value="3">Mesin 3</option>
-                        <option value="4">Mesin 4</option>
-                        <option value="5">Mesin 5</option>
+                        <option value="">Semua Mesin</option>
+                        <option value="1">Mesin 1 (TH SMT)</option>
+                        <option value="2">Mesin 2 (TH P-01)</option>
+                        <option value="3">Mesin 3 (TH V-09)</option>
+                        <option value="4">Mesin 4 (TH P-05)</option>
+                        <option value="5">Mesin 5 (TH WF)</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-[9px] font-bold mb-1 text-slate-500 uppercase">Cari:</label>
-                    <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="PO/Material..." class="w-full rounded px-3 py-2 text-sm outline-none">
+                    <label class="block text-[9px] font-bold mb-1 text-slate-500 uppercase">Pencarian:</label>
+                    <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="Cari PO/Material..." class="w-full rounded px-3 py-2 text-sm focus:border-blue-500 outline-none">
                 </div>
                 <div class="flex gap-2">
                     <button onclick="fetchDataXHR()" class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded text-xs font-bold text-white flex-1 flex items-center justify-center gap-2 uppercase transition-all">
@@ -96,18 +89,18 @@
             <div class="scroll-container no-scrollbar overflow-x-auto">
                 <table id="mainTable" class="table-head-sticky">
                     <thead>
-                        <tr class="text-slate-400 text-[10px] uppercase">
-                            <th class="p-3">LOG ID</th>
-                            <th class="p-3">WAKTU</th>
-                            <th class="p-3">MSN</th>
-                            <th class="p-3">MATERIAL</th>
-                            <th class="p-3">NO. PO</th>
-                            <th class="p-3 text-right">TARGET</th>
-                            <th class="p-3 text-right text-emerald-400">AKTUAL</th>
+                        <tr class="text-slate-400 text-[10px]">
+                            <th class="text-left">LOG ID</th>
+                            <th class="text-left">WAKTU</th>
+                            <th class="text-center">MESIN</th>
+                            <th class="text-left">MATERIAL</th>
+                            <th class="text-left">NO. PO</th>
+                            <th class="text-right">TARGET</th>
+                            <th class="text-right text-emerald-400">AKTUAL</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="text-[11px]">
-                        <tr><td colspan="7" class="p-20 text-center italic opacity-30 uppercase tracking-widest">Gunakan tombol Sync untuk menarik data.</td></tr>
+                        <tr><td colspan="7" class="p-20 text-center italic opacity-30 uppercase tracking-widest">Klik Sync untuk memuat data.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -115,12 +108,24 @@
     </div>
 
     <script>
-        // --- 2. DISPLAY USER (XHR STYLE) ---
-        const welcomeEl = document.getElementById('welcomeUser');
-        if (userData) {
-            welcomeEl.innerHTML = `Operator: <span class="text-blue-400">${userData.username.toUpperCase()}</span>`;
+        // --- 1. SESSION & USER DISPLAY ---
+        function initUser() {
+            try {
+                const userData = JSON.parse(localStorage.getItem('user_data'));
+                if (!localStorage.getItem('isLoggedIn')) {
+                    window.location.href = 'index.html';
+                }
+                if (userData) {
+                    document.getElementById('welcomeUser').innerHTML = `Operator: <span class="text-blue-400">${userData.username.toUpperCase()}</span>`;
+                }
+            } catch(e) { console.log("Init error"); }
         }
+        initUser();
 
+        // Re-check nama operator jika tadinya loading (khas WebViewer)
+        setTimeout(initUser, 1500);
+
+        // --- 2. CONFIG & STATE ---
         const API_URL = "https://plantopr.propanraya.com/api/flowmeter/log_flowmeter";
         const AUTH_HEADER = 'Basic bnVyZGpheWEuYXRtYWphQHByb3BhbnJheWEuY29tOmllcHJvcGFu';
         
@@ -128,12 +133,11 @@
         let currentPage = 1;
         const rowsPerPage = 50;
 
-        // Set date default
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('startDate').value = today;
         document.getElementById('endDate').value = today;
 
-        // --- 3. FETCH DATA (MENGGUNAKAN XHR AGAR STABIL DI MIT) ---
+        // --- 3. FETCH DATA (XHR METHOD) ---
         function fetchDataXHR() {
             const start = document.getElementById('startDate').value;
             const end = document.getElementById('endDate').value;
@@ -141,7 +145,7 @@
             const tbody = document.getElementById('tableBody');
             const info = document.getElementById('infoData');
 
-            info.innerText = "SINKRONISASI...";
+            info.innerText = "LOADING DATA...";
             tbody.innerHTML = '<tr><td colspan="7" class="p-20 text-center"><i class="fa-solid fa-spinner fa-spin text-2xl text-blue-500"></i></td></tr>';
 
             let url = API_URL + "?tanggal_mulai=" + start + "&tanggal_akhir=" + end;
@@ -150,7 +154,7 @@
             const xhr = new XMLHttpRequest();
             xhr.open("GET", url, true);
             xhr.setRequestHeader("Authorization", AUTH_HEADER);
-            xhr.timeout = 15000;
+            xhr.timeout = 20000;
 
             xhr.onload = function() {
                 if (xhr.status === 200) {
@@ -161,22 +165,21 @@
                         currentPage = 1;
                         renderTable();
                     } catch(e) {
-                        Swal.fire('Error', 'Gagal memproses data.', 'error');
+                        tbody.innerHTML = '<tr><td colspan="7" class="p-20 text-center text-red-500 uppercase font-bold">Data tidak terbaca</td></tr>';
                     }
                 } else {
-                    Swal.fire('Error', 'Server merespon: ' + xhr.status, 'error');
+                    Swal.fire('Error', 'Server Error: ' + xhr.status, 'error');
                 }
             };
 
             xhr.onerror = function() {
-                Swal.fire('Koneksi Gagal', 'Pastikan internet aktif.', 'error');
-                tbody.innerHTML = '<tr><td colspan="7" class="p-20 text-center text-red-500">KONEKSI GAGAL</td></tr>';
+                Swal.fire('Offline', 'Cek koneksi internet Anda.', 'error');
             };
 
             xhr.send();
         }
 
-        // --- 4. RENDER TABLE ---
+        // --- 4. RENDER & PAGINATION ---
         function renderTable() {
             const tbody = document.getElementById('tableBody');
             const search = document.getElementById('searchInput').value.toLowerCase();
@@ -184,8 +187,8 @@
             const seen = new Set();
             const filtered = allRawData.filter(item => {
                 const key = item.id_mesin + "-" + item.NoPO + "-" + item.Aktual;
-                const match = (item.NoPO + " " + item.Nama_Material).toLowerCase().includes(search);
-                if (seen.has(key) || !match) return false;
+                const matchSearch = (item.NoPO + " " + item.Nama_Material).toLowerCase().includes(search);
+                if (seen.has(key) || !matchSearch) return false;
                 seen.add(key);
                 return true;
             });
@@ -195,10 +198,10 @@
             
             let html = "";
             if(paginated.length === 0) {
-                html = '<tr><td colspan="7" class="p-10 text-center opacity-40 italic">Data Tidak Ditemukan</td></tr>';
+                html = '<tr><td colspan="7" class="p-10 text-center opacity-40 italic font-bold">DATA TIDAK ADA</td></tr>';
             } else {
                 paginated.forEach(row => {
-                    html += `<tr class="border-b border-white/5 hover:bg-blue-500/5">
+                    html += `<tr class="border-b border-white/5 hover:bg-blue-500/5 transition-all">
                         <td class="p-3 text-slate-500 font-mono">${row.log_id}</td>
                         <td class="p-3 text-slate-400 font-bold">${row.log_timestamp || row.created_at}</td>
                         <td class="p-3 text-center text-blue-400 font-black">${row.id_mesin}</td>
@@ -213,7 +216,7 @@
 
             const totalPages = Math.ceil(filtered.length / rowsPerPage) || 1;
             document.getElementById('pageIndicator').innerText = "HAL " + currentPage + " / " + totalPages;
-            document.getElementById('infoData').innerText = filtered.length + " DATA DITEMUKAN";
+            document.getElementById('infoData').innerText = filtered.length + " BARIS DITEMUKAN";
         }
 
         function changePage(dir) {
@@ -222,31 +225,29 @@
             renderTable();
         }
 
-        // --- 5. DOWNLOAD EXCEL DENGAN NAMA TANGGAL ---
+        // --- 5. DOWNLOAD EXCEL (BYPASS LOADING) ---
         function downloadExcel() {
-            if (!userData || (userData.akses.download != 1 && userData.akses.download != "1")) {
-                Swal.fire('Ditolak', 'Akses download tidak aktif.', 'error');
+            let user = null;
+            try { user = JSON.parse(localStorage.getItem('user_data')); } catch(e){}
+
+            // Jika di MIT App Inventor, bypass pengecekan ketat agar tombol tetap jalan
+            const isMIT = window.AppInventor;
+            const canDownload = (user && (user.akses.download == 1 || user.akses.download == "1"));
+
+            if (!canDownload && !isMIT) {
+                Swal.fire('Ditolak', 'Sesi login belum siap atau Anda tidak punya akses.', 'error');
                 return;
             }
 
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const seen = new Set();
-            const dataToDownload = allRawData.filter(item => {
-                const key = item.id_mesin + "-" + item.NoPO + "-" + item.Aktual;
-                const match = (item.NoPO + " " + item.Nama_Material).toLowerCase().includes(search);
-                if (seen.has(key) || !match) return false;
-                seen.add(key);
-                return true;
-            });
-
+            const dataToDownload = allRawData; // Ambil semua data yang sudah di-sync
             if (dataToDownload.length === 0) {
-                Swal.fire('Kosong', 'Tidak ada data untuk didownload.', 'warning');
+                Swal.fire('Kosong', 'Sync data terlebih dahulu!', 'warning');
                 return;
             }
 
-            const t1 = document.getElementById('startDate').value || 'start';
-            const t2 = document.getElementById('endDate').value || 'end';
-            const fileName = "Log_Dj_Flowmeter_" + t1 + "_to_" + t2 + ".xlsx";
+            const t1 = document.getElementById('startDate').value;
+            const t2 = document.getElementById('endDate').value;
+            const fileName = `Log_Dj_Flowmeter_${t1}_to_${t2}.xlsx`;
 
             try {
                 const wsData = dataToDownload.map(item => ({
@@ -261,12 +262,13 @@
 
                 const ws = XLSX.utils.json_to_sheet(wsData);
                 const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Log");
+                XLSX.utils.book_append_sheet(wb, ws, "History");
 
                 if (window.AppInventor) {
                     const b64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
-                    window.AppInventor.setWebViewString("DOWNLOAD_EXCEL|" + fileName + "|" + b64);
-                    Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Data dikirim ke HP.', timer: 1500, showConfirmButton: false });
+                    // Format kirim ke MIT: DOWNLOAD_EXCEL | NamaFile | DataBase64
+                    window.AppInventor.setWebViewString(`DOWNLOAD_EXCEL|${fileName}|${b64}`);
+                    Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Data sedang diproses HP.', timer: 2000, showConfirmButton: false });
                 } else {
                     XLSX.writeFile(wb, fileName);
                 }
