@@ -28,18 +28,52 @@
 </head>
 
 <body class="p-4 md:p-8">
+    <script>
+        // --- 1. SESSION & USER DATA ---
+        let userData = null;
+        try {
+            userData = JSON.parse(localStorage.getItem('user_data'));
+        } catch(e) { console.log("Storage error"); }
+
+        // Jika tidak ada status login, tendang ke index
+        if (!localStorage.getItem('isLoggedIn')) {
+            window.location.href = 'index.html';
+        }
+
+        // --- 2. AUTO LOGOUT 1 MENIT (60 DETIK) ---
+        let idleTime = 0;
+        function resetTimer() { 
+            idleTime = 0; 
+        }
+
+        // Event listener yang sensitif untuk layar sentuh HP
+        document.addEventListener('touchstart', resetTimer);
+        document.addEventListener('mousemove', resetTimer);
+        document.addEventListener('mousedown', resetTimer);
+        document.addEventListener('keypress', resetTimer);
+        document.addEventListener('scroll', resetTimer);
+
+        setInterval(function() {
+            idleTime++;
+            if (idleTime >= 60) { // 60 detik
+                localStorage.clear();
+                window.location.href = 'index.html';
+            }
+        }, 1000);
+    </script>
+
     <div class="container mx-auto">
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-white mb-2">Realtime Status zFlowmeter</h1>
+            <h1 class="text-3xl font-bold text-white mb-2">Realtime Status xFlowmeter</h1>
             <div id="currentTime" class="text-white text-lg font-mono mb-1">00:00:00</div>
-            <p id="welcomeUser" class="text-blue-300 opacity-80 uppercase tracking-widest text-[10px]">Verifikasi User...</p>
+            <p id="welcomeUser" class="text-blue-300 opacity-80 uppercase tracking-widest text-[10px]">Loading User...</p>
             <p id="lastUpdate" class="text-emerald-400 text-[9px] mt-2 italic">Last Update: Waiting for data...</p>
         </div>
 
         <div class="flex justify-end mb-6 space-x-3">
-            <a id="btn-transaksi" href="transaksi_flowmeter.html" class="bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🏠 TRANSAKSI</a>
-            <a id="btn-history" href="history_flowmeter.html" class="bg-slate-600 hover:bg-slate-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">📚 HISTORY</a>
-            <a href="index.html" onclick="localStorage.clear()" class="bg-red-600 hover:bg-red-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🔓 LOGOUT</a>
+            <a id="btn-transaksi" href="transaksi_flowmeter.html" class="hidden bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic border-b-2 border-indigo-900">🏠 TRANSAKSI</a>
+            <a id="btn-history" href="history_flowmeter.html" class="hidden bg-slate-600 hover:bg-slate-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic border-b-2 border-slate-800">📚 HISTORY</a>
+            <a href="index.html" onclick="localStorage.clear()" class="bg-red-600 hover:bg-red-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic border-b-2 border-red-900">🔓 LOGOUT</a>
         </div>
 
         <div class="bg-gray-900/90 rounded-xl border border-white/10 shadow-2xl p-5 mb-8">
@@ -84,37 +118,27 @@
     </div>
 
     <script>
-        // --- SISTEM LOGIN BACKUP (Agar tidak Guest) ---
-        function getLoginData() {
-            let data = null;
-            try {
-                // Coba ambil dari localStorage
-                data = JSON.parse(localStorage.getItem('user_data'));
-            } catch(e) {}
-            return data;
-        }
-
-        function initUser() {
-            const user = getLoginData();
+        // --- 3. DISPLAY USER INFO ---
+        function initUserDisplay() {
             const welcomeEl = document.getElementById('welcomeUser');
-            const btnT = document.getElementById('btn-transaksi');
-            const btnH = document.getElementById('btn-history');
-
-            if (user) {
-                welcomeEl.innerText = "USER: " + user.username.toUpperCase() + " | MONITORING SYSTEM DATA RESULT";
-                
-                // Atur visibilitas tombol berdasarkan akses
-                if (user.akses) {
-                    if (user.akses.kontrol != "1") btnT.style.display = 'none';
-                    if (user.akses.history != "1") btnH.style.display = 'none';
+            if (userData) {
+                welcomeEl.innerText = "USER: " + userData.username.toUpperCase() + " | MONITORING SYSTEM DATA RESULT";
+                // Cek Akses
+                if(userData.akses && (userData.akses.kontrol == 1 || userData.akses.kontrol == "1")) {
+                    document.getElementById('btn-transaksi').classList.remove('hidden');
+                }
+                if(userData.akses && (userData.akses.history == 1 || userData.akses.history == "1")) {
+                    document.getElementById('btn-history').classList.remove('hidden');
                 }
             } else {
-                // Jika masih tidak terbaca, kita biarkan tombol muncul agar user bisa navigasi
                 welcomeEl.innerText = "USER: ONLINE | MONITORING SYSTEM DATA RESULT";
+                // Fallback: jika storage gagal di MIT, tampilkan saja tombolnya agar aplikasi bisa navigasi
+                document.getElementById('btn-transaksi').classList.remove('hidden');
+                document.getElementById('btn-history').classList.remove('hidden');
             }
         }
 
-        // --- JAM ---
+        // --- 4. CLOCK ---
         function updateClock() {
             const now = new Date();
             document.getElementById('currentTime').innerText = now.toLocaleTimeString('id-ID', { hour12: false });
@@ -122,57 +146,71 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // --- API & CHART ---
+        // --- 5. DATA FETCHING (XHR VERSION FOR STABILITY) ---
         const API_URL = 'https://plantopr.propanraya.com/api/flowmeter/result_flowmeter';
         const AUTH_HEADER = 'Basic bnVyZGpheWEuYXRtYWphQHByb3BhbnJheWEuY29tOmllcHJvcGFu';
         let stockChart;
 
+        function formatIndo(val) {
+            let num = parseFloat(val) || 0;
+            return num.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
         function updateDashboard() {
             const ids = ['1', '2', '3', '4', '5'];
-            let resCount = 0;
-            let finalResults = [];
+            let count = 0;
+            let results = [];
 
-            ids.forEach((id, idx) => {
+            ids.forEach((id, index) => {
                 const xhr = new XMLHttpRequest();
                 xhr.open("GET", API_URL + "?id_mesin=" + id, true);
                 xhr.setRequestHeader("Authorization", AUTH_HEADER);
+                xhr.timeout = 10000;
+
                 xhr.onload = function() {
                     if (xhr.status === 200) {
                         try {
-                            const json = JSON.parse(xhr.responseText);
-                            const data = json.data ? (Array.isArray(json.data) ? json.data[0] : json.data) : json;
-                            if(data) finalResults[idx] = data;
+                            const res = JSON.parse(xhr.responseText);
+                            const data = res.data ? (Array.isArray(res.data) ? res.data[0] : res.data) : res;
+                            if (data) results[index] = data;
                         } catch(e) {}
                     }
-                    resCount++;
-                    if(resCount === ids.length) renderAll(finalResults.filter(d => d));
+                    next();
                 };
-                xhr.onerror = function() {
-                    resCount++;
-                    if(resCount === ids.length) renderAll(finalResults.filter(d => d));
-                };
+                xhr.onerror = function() { next(); };
+                xhr.ontimeout = function() { next(); };
                 xhr.send();
             });
+
+            function next() {
+                count++;
+                if (count === ids.length) {
+                    const validData = results.filter(d => d !== undefined);
+                    if (validData.length > 0) {
+                        renderUI(validData);
+                    }
+                }
+            }
         }
 
-        function renderAll(data) {
+        function renderUI(data) {
             document.getElementById('totalMachines').innerText = data.length;
             document.getElementById('lastUpdate').innerText = "Last Update: " + new Date().toLocaleTimeString('id-ID');
-            
+
             // Render Table
             const tbody = document.getElementById('tableBody');
             let html = "";
             data.forEach(item => {
                 const o = item.Aktif_Outlet || "1";
                 html += "<tr>" +
-                    "<td>" + (item.id_mesin || '-') + "</td>" +
-                    "<td class='text-blue-400 font-bold'>" + (item.Nama_ID || '-') + "</td>" +
+                    "<td class='opacity-40 font-mono'>" + (item.id_mesin || '-') + "</td>" +
+                    "<td class='font-bold text-blue-400'>" + (item.Nama_ID || '-') + "</td>" +
                     "<td>" + (item.Nama_Material || '-') + "</td>" +
-                    "<td>" + (item.NoPO || '-') + "</td>" +
-                    "<td class='stock-yellow font-bold'>" + (parseFloat(item.Stock)||0).toLocaleString('id-ID') + "</td>" +
-                    "<td class='text-indigo-300'>" + (item['Outlet_'+o+'_Nama'] || '-') + "</td>" +
-                    "<td class='text-active-green'>" + (parseFloat(item['Outlet_'+o+'_Target'])||0).toLocaleString('id-ID') + "</td>" +
-                    "<td class='text-active-green'>" + (parseFloat(item.Aktual)||0).toLocaleString('id-ID') + "</td>" +
+                    "<td class='opacity-60'>" + (item.NoPO || '-') + "</td>" +
+                    "<td class='stock-yellow font-bold'>" + formatIndo(item.Stock) + "</td>" +
+                    "<td class='text-indigo-300 italic'>" + (item['Outlet_'+o+'_Nama'] || '-') + "</td>" +
+                    "<td class='text-active-green font-bold'>" + formatIndo(item['Outlet_'+o+'_Target']) + "</td>" +
+                    "<td class='text-active-green font-bold'>" + formatIndo(item.Aktual) + "</td>" +
                 "</tr>";
             });
             tbody.innerHTML = html;
@@ -185,19 +223,25 @@
                 data: {
                     labels: data.map(d => d.Nama_ID || d.id_mesin),
                     datasets: [{
-                        data: data.map(d => parseFloat(d.Stock)||0),
-                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+                        data: data.map(d => parseFloat(d.Stock) || 0),
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                        borderRadius: 5
                     }]
                 },
-                options: { 
-                    responsive: true, 
+                options: {
+                    responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } }
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
+                        x: { grid: { display: false }, ticks: { color: '#ffffff', font: { size: 10 } } }
+                    }
                 }
             });
         }
 
-        initUser();
+        // --- 6. RUN ---
+        initUserDisplay();
         updateDashboard();
         setInterval(updateDashboard, 15000);
     </script>
