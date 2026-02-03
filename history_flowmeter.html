@@ -15,7 +15,7 @@
         .scroll-container { max-height: 500px; overflow-y: auto; background-color: #111c44; }
         .card-custom { background: #111c44; border: 1px solid #1b254b; }
         input, select { background: #0b1437 !important; border: 1px solid #1b254b !important; color: white !important; }
-        table { border-collapse: collapse; width: 100%; min-width: 750px; }
+        table { border-collapse: collapse; width: 100%; min-width: 900px; } /* Lebar ditambah untuk kolom baru */
         .table-head-sticky thead th { 
             position: sticky; top: 0; background: #1b254b; z-index: 20; 
             border-bottom: 2px solid #3b82f6; padding: 12px 8px;
@@ -24,6 +24,40 @@
     </style>
 </head>
 <body class="p-4 md:p-8">
+
+    <script>
+        // --- 1. SESSION & USER DATA ---
+        let userData = null;
+        try {
+            userData = JSON.parse(localStorage.getItem('user_data'));
+        } catch(e) { console.log("Storage error"); }
+
+        // Jika tidak ada status login, tendang ke index
+        if (!localStorage.getItem('isLoggedIn')) {
+            window.location.href = 'index.html';
+        }
+
+        // --- 2. AUTO LOGOUT 1 MENIT (60 DETIK) ---
+        let idleTime = 0;
+        function resetTimer() { 
+            idleTime = 0; 
+        }
+
+        // Event listener sensitif (Mouse & Touch)
+        document.addEventListener('touchstart', resetTimer);
+        document.addEventListener('mousemove', resetTimer);
+        document.addEventListener('mousedown', resetTimer);
+        document.addEventListener('keypress', resetTimer);
+        document.addEventListener('scroll', resetTimer);
+
+        setInterval(function() {
+            idleTime++;
+            if (idleTime >= 60) { // 60 detik
+                localStorage.clear();
+                window.location.href = 'index.html';
+            }
+        }, 1000);
+    </script>
 
     <div class="max-w-7xl mx-auto">
         <header class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
@@ -54,16 +88,16 @@
                     <label class="block text-[9px] font-bold mb-1 text-slate-500 uppercase">Pilih Mesin:</label>
                     <select id="fmFilter" class="w-full rounded px-3 py-2 text-sm">
                         <option value="">Semua Mesin</option>
-                        <option value="1">Mesin 1 (TH SMT)</option>
-                        <option value="2">Mesin 2 (TH P-01)</option>
-                        <option value="3">Mesin 3 (TH V-09)</option>
-                        <option value="4">Mesin 4 (TH P-05)</option>
-                        <option value="5">Mesin 5 (TH WF)</option>
+                        <option value="1">Mesin 1</option>
+                        <option value="2">Mesin 2</option>
+                        <option value="3">Mesin 3</option>
+                        <option value="4">Mesin 4</option>
+                        <option value="5">Mesin 5</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-[9px] font-bold mb-1 text-slate-500 uppercase">Pencarian:</label>
-                    <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="Cari PO/Material..." class="w-full rounded px-3 py-2 text-sm focus:border-blue-500 outline-none">
+                    <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="PO/PBI/Material..." class="w-full rounded px-3 py-2 text-sm focus:border-blue-500 outline-none">
                 </div>
                 <div class="flex gap-2">
                     <button onclick="fetchDataXHR()" class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded text-xs font-bold text-white flex-1 flex items-center justify-center gap-2 uppercase transition-all">
@@ -92,15 +126,17 @@
                         <tr class="text-slate-400 text-[10px]">
                             <th class="text-left">LOG ID</th>
                             <th class="text-left">WAKTU</th>
-                            <th class="text-center">MESIN</th>
+                            <th class="text-center">MSN</th>
                             <th class="text-left">MATERIAL</th>
-                            <th class="text-left">NO. PO</th>
+                            <th class="text-left">NO. PO / PBI</th>
+                            <th class="text-center">OUTPUT OUTLET</th>
                             <th class="text-right">TARGET</th>
                             <th class="text-right text-emerald-400">AKTUAL</th>
+                            <th class="text-left">KETERANGAN</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="text-[11px]">
-                        <tr><td colspan="7" class="p-20 text-center italic opacity-30 uppercase tracking-widest">Klik Sync untuk memuat data.</td></tr>
+                        <tr><td colspan="9" class="p-20 text-center italic opacity-30 uppercase tracking-widest">Klik Sync untuk memuat data.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -108,24 +144,14 @@
     </div>
 
     <script>
-        // --- 1. SESSION & USER DISPLAY ---
-        function initUser() {
-            try {
-                const userData = JSON.parse(localStorage.getItem('user_data'));
-                if (!localStorage.getItem('isLoggedIn')) {
-                    window.location.href = 'index.html';
-                }
-                if (userData) {
-                    document.getElementById('welcomeUser').innerHTML = `Operator: <span class="text-blue-400">${userData.username.toUpperCase()}</span>`;
-                }
-            } catch(e) { console.log("Init error"); }
+        // Update Nama Operator di Header
+        function displayOperator() {
+            if (userData) {
+                document.getElementById('welcomeUser').innerHTML = `Operator: <span class="text-blue-400">${userData.username.toUpperCase()}</span>`;
+            }
         }
-        initUser();
+        displayOperator();
 
-        // Re-check nama operator jika tadinya loading (khas WebViewer)
-        setTimeout(initUser, 1500);
-
-        // --- 2. CONFIG & STATE ---
         const API_URL = "https://plantopr.propanraya.com/api/flowmeter/log_flowmeter";
         const AUTH_HEADER = 'Basic bnVyZGpheWEuYXRtYWphQHByb3BhbnJheWEuY29tOmllcHJvcGFu';
         
@@ -137,7 +163,6 @@
         document.getElementById('startDate').value = today;
         document.getElementById('endDate').value = today;
 
-        // --- 3. FETCH DATA (XHR METHOD) ---
         function fetchDataXHR() {
             const start = document.getElementById('startDate').value;
             const end = document.getElementById('endDate').value;
@@ -146,7 +171,7 @@
             const info = document.getElementById('infoData');
 
             info.innerText = "LOADING DATA...";
-            tbody.innerHTML = '<tr><td colspan="7" class="p-20 text-center"><i class="fa-solid fa-spinner fa-spin text-2xl text-blue-500"></i></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="p-20 text-center"><i class="fa-solid fa-spinner fa-spin text-2xl text-blue-500"></i></td></tr>';
 
             let url = API_URL + "?tanggal_mulai=" + start + "&tanggal_akhir=" + end;
             if(fm) url += "&id_mesin=" + fm;
@@ -160,37 +185,28 @@
                 if (xhr.status === 200) {
                     try {
                         const json = JSON.parse(xhr.responseText);
-                        allRawData = Array.isArray(json) ? json : (json.data || []);
+                        allRawData = json.data || [];
                         allRawData.sort((a, b) => b.log_id - a.log_id);
                         currentPage = 1;
                         renderTable();
                     } catch(e) {
-                        tbody.innerHTML = '<tr><td colspan="7" class="p-20 text-center text-red-500 uppercase font-bold">Data tidak terbaca</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="9" class="p-20 text-center text-red-500 uppercase font-bold">Format data tidak sesuai</td></tr>';
                     }
                 } else {
                     Swal.fire('Error', 'Server Error: ' + xhr.status, 'error');
                 }
             };
-
-            xhr.onerror = function() {
-                Swal.fire('Offline', 'Cek koneksi internet Anda.', 'error');
-            };
-
+            xhr.onerror = function() { Swal.fire('Offline', 'Cek koneksi internet.', 'error'); };
             xhr.send();
         }
 
-        // --- 4. RENDER & PAGINATION ---
         function renderTable() {
             const tbody = document.getElementById('tableBody');
             const search = document.getElementById('searchInput').value.toLowerCase();
             
-            const seen = new Set();
             const filtered = allRawData.filter(item => {
-                const key = item.id_mesin + "-" + item.NoPO + "-" + item.Aktual;
-                const matchSearch = (item.NoPO + " " + item.Nama_Material).toLowerCase().includes(search);
-                if (seen.has(key) || !matchSearch) return false;
-                seen.add(key);
-                return true;
+                const combinedPO = (item.NoPO || '') + "/" + (item.NoPBI || '');
+                return (combinedPO + " " + (item.Nama_Material || '')).toLowerCase().includes(search);
             });
 
             const startIdx = (currentPage - 1) * rowsPerPage;
@@ -198,17 +214,20 @@
             
             let html = "";
             if(paginated.length === 0) {
-                html = '<tr><td colspan="7" class="p-10 text-center opacity-40 italic font-bold">DATA TIDAK ADA</td></tr>';
+                html = '<tr><td colspan="9" class="p-10 text-center opacity-40 italic font-bold">TIDAK ADA DATA</td></tr>';
             } else {
                 paginated.forEach(row => {
+                    const po_pbi = (row.NoPO || '-') + " / " + (row.NoPBI || '-');
                     html += `<tr class="border-b border-white/5 hover:bg-blue-500/5 transition-all">
                         <td class="p-3 text-slate-500 font-mono">${row.log_id}</td>
-                        <td class="p-3 text-slate-400 font-bold">${row.log_timestamp || row.created_at}</td>
+                        <td class="p-3 text-slate-400 font-bold">${row.log_timestamp}</td>
                         <td class="p-3 text-center text-blue-400 font-black">${row.id_mesin}</td>
                         <td class="p-3 font-semibold text-slate-200">${row.Nama_Material || '-'}</td>
-                        <td class="p-3 text-slate-400">${row.NoPO || '-'}</td>
+                        <td class="p-3 text-slate-400">${po_pbi}</td>
+                        <td class="p-3 text-center text-indigo-300 font-bold">${row.Outlet_Nama || '-'}</td>
                         <td class="p-3 text-right font-mono text-yellow-500">${parseFloat(row.Target || 0).toFixed(2)}</td>
                         <td class="p-3 text-right font-mono text-emerald-400 font-bold">${parseFloat(row.Aktual || 0).toFixed(2)}</td>
+                        <td class="p-3 text-slate-400 italic">${row.keterangan || '-'}</td>
                     </tr>`;
                 });
             }
@@ -225,39 +244,28 @@
             renderTable();
         }
 
-        // --- 5. DOWNLOAD EXCEL (BYPASS LOADING) ---
         function downloadExcel() {
-            let user = null;
-            try { user = JSON.parse(localStorage.getItem('user_data')); } catch(e){}
-
-            // Jika di MIT App Inventor, bypass pengecekan ketat agar tombol tetap jalan
             const isMIT = window.AppInventor;
-            const canDownload = (user && (user.akses.download == 1 || user.akses.download == "1"));
-
-            if (!canDownload && !isMIT) {
-                Swal.fire('Ditolak', 'Sesi login belum siap atau Anda tidak punya akses.', 'error');
-                return;
-            }
-
-            const dataToDownload = allRawData; // Ambil semua data yang sudah di-sync
-            if (dataToDownload.length === 0) {
+            if (allRawData.length === 0) {
                 Swal.fire('Kosong', 'Sync data terlebih dahulu!', 'warning');
                 return;
             }
 
             const t1 = document.getElementById('startDate').value;
             const t2 = document.getElementById('endDate').value;
-            const fileName = `Log_Dj_Flowmeter_${t1}_to_${t2}.xlsx`;
+            const fileName = `Log_Flowmeter_${t1}_to_${t2}.xlsx`;
 
             try {
-                const wsData = dataToDownload.map(item => ({
+                const wsData = allRawData.map(item => ({
                     "LOG ID": item.log_id,
                     "WAKTU": item.log_timestamp,
                     "MESIN": item.id_mesin,
                     "MATERIAL": item.Nama_Material,
-                    "NO PO": item.NoPO,
+                    "NO PO / PBI": (item.NoPO || '') + " / " + (item.NoPBI || ''),
+                    "OUTPUT OUTLET": item.Outlet_Nama,
                     "TARGET": parseFloat(item.Target || 0),
-                    "AKTUAL": parseFloat(item.Aktual || 0)
+                    "AKTUAL": parseFloat(item.Aktual || 0),
+                    "KETERANGAN": item.keterangan
                 }));
 
                 const ws = XLSX.utils.json_to_sheet(wsData);
@@ -266,14 +274,13 @@
 
                 if (window.AppInventor) {
                     const b64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
-                    // Format kirim ke MIT: DOWNLOAD_EXCEL | NamaFile | DataBase64
                     window.AppInventor.setWebViewString(`DOWNLOAD_EXCEL|${fileName}|${b64}`);
-                    Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Data sedang diproses HP.', timer: 2000, showConfirmButton: false });
+                    Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Mengirim file ke HP...', timer: 2000, showConfirmButton: false });
                 } else {
                     XLSX.writeFile(wb, fileName);
                 }
             } catch (err) {
-                Swal.fire('Gagal', 'Gagal membuat file Excel.', 'error');
+                Swal.fire('Gagal', 'Gagal membuat Excel.', 'error');
             }
         }
     </script>
