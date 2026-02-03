@@ -30,16 +30,16 @@
 <body class="p-4 md:p-8">
     <div class="container mx-auto">
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-white mb-2">Realtime Status oFlowmeter</h1>
+            <h1 class="text-3xl font-bold text-white mb-2">Realtime Status zFlowmeter</h1>
             <div id="currentTime" class="text-white text-lg font-mono mb-1">00:00:00</div>
-            <p id="welcomeUser" class="text-blue-300 opacity-80 uppercase tracking-widest text-[10px]">Loading User...</p>
+            <p id="welcomeUser" class="text-blue-300 opacity-80 uppercase tracking-widest text-[10px]">Verifikasi User...</p>
             <p id="lastUpdate" class="text-emerald-400 text-[9px] mt-2 italic">Last Update: Waiting for data...</p>
         </div>
 
         <div class="flex justify-end mb-6 space-x-3">
-            <a id="btn-transaksi" href="transaksi_flowmeter.html" class="hidden bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🏠 TRANSAKSI</a>
-            <a id="btn-history" href="history_flowmeter.html" class="hidden bg-slate-600 hover:bg-slate-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">📚 HISTORY</a>
-            <button id="btnLogout" class="bg-red-600 hover:bg-red-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🔓 LOGOUT</button>
+            <a id="btn-transaksi" href="transaksi_flowmeter.html" class="bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🏠 TRANSAKSI</a>
+            <a id="btn-history" href="history_flowmeter.html" class="bg-slate-600 hover:bg-slate-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">📚 HISTORY</a>
+            <a href="index.html" onclick="localStorage.clear()" class="bg-red-600 hover:bg-red-700 px-5 py-2 rounded shadow-lg text-xs font-semibold text-white transition-all italic">🔓 LOGOUT</a>
         </div>
 
         <div class="bg-gray-900/90 rounded-xl border border-white/10 shadow-2xl p-5 mb-8">
@@ -84,48 +84,37 @@
     </div>
 
     <script>
-        // --- LOGIKA USER DATA (WebViewer Friendly) ---
-        let userData = null;
-        try {
-            const storedData = localStorage.getItem('user_data');
-            if (storedData) {
-                userData = JSON.parse(storedData);
-            }
-        } catch(e) { console.error("Storage Error"); }
+        // --- SISTEM LOGIN BACKUP (Agar tidak Guest) ---
+        function getLoginData() {
+            let data = null;
+            try {
+                // Coba ambil dari localStorage
+                data = JSON.parse(localStorage.getItem('user_data'));
+            } catch(e) {}
+            return data;
+        }
 
         function initUser() {
+            const user = getLoginData();
             const welcomeEl = document.getElementById('welcomeUser');
-            if (userData) {
-                welcomeEl.innerText = "USER: " + userData.username + " | MONITORING SYSTEM DATA RESULT";
+            const btnT = document.getElementById('btn-transaksi');
+            const btnH = document.getElementById('btn-history');
+
+            if (user) {
+                welcomeEl.innerText = "USER: " + user.username.toUpperCase() + " | MONITORING SYSTEM DATA RESULT";
                 
-                // Cek Akses Transaksi
-                if(userData.akses && (userData.akses.kontrol == 1 || userData.akses.kontrol == "1")) {
-                    document.getElementById('btn-transaksi').classList.remove('hidden');
-                }
-                
-                // Cek Akses History
-                if(userData.akses && (userData.akses.history == 1 || userData.akses.history == "1")) {
-                    document.getElementById('btn-history').classList.remove('hidden');
+                // Atur visibilitas tombol berdasarkan akses
+                if (user.akses) {
+                    if (user.akses.kontrol != "1") btnT.style.display = 'none';
+                    if (user.akses.history != "1") btnH.style.display = 'none';
                 }
             } else {
-                // Jika localStorage kosong (sering terjadi di APK), tampilkan default agar tidak stuck
-                welcomeEl.innerText = "USER: GUEST | MONITORING SYSTEM DATA RESULT";
-                document.getElementById('btn-transaksi').classList.remove('hidden'); // Tampilkan saja agar bisa diklik
-                document.getElementById('btn-history').classList.remove('hidden');
+                // Jika masih tidak terbaca, kita biarkan tombol muncul agar user bisa navigasi
+                welcomeEl.innerText = "USER: ONLINE | MONITORING SYSTEM DATA RESULT";
             }
         }
 
-        // --- LOGOUT FUNCTION ---
-        function logoutUser() {
-            localStorage.clear();
-            if (window.AppInventor) {
-                window.AppInventor.setWebViewString("LOGOUT");
-            }
-            window.location.href = 'index.html';
-        }
-        document.getElementById('btnLogout').addEventListener('click', logoutUser);
-
-        // --- JAM REALTIME ---
+        // --- JAM ---
         function updateClock() {
             const now = new Date();
             document.getElementById('currentTime').innerText = now.toLocaleTimeString('id-ID', { hour12: false });
@@ -133,105 +122,81 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // --- API CONFIG ---
+        // --- API & CHART ---
         const API_URL = 'https://plantopr.propanraya.com/api/flowmeter/result_flowmeter';
         const AUTH_HEADER = 'Basic bnVyZGpheWEuYXRtYWphQHByb3BhbnJheWEuY29tOmllcHJvcGFu';
         let stockChart;
 
-        function formatIndo(val) {
-            let num = parseFloat(val) || 0;
-            return num.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-
         function updateDashboard() {
-            const machineIds = ['1', '2', '3', '4', '5'];
-            let results = [];
-            let completed = 0;
+            const ids = ['1', '2', '3', '4', '5'];
+            let resCount = 0;
+            let finalResults = [];
 
-            machineIds.forEach((id, index) => {
+            ids.forEach((id, idx) => {
                 const xhr = new XMLHttpRequest();
                 xhr.open("GET", API_URL + "?id_mesin=" + id, true);
                 xhr.setRequestHeader("Authorization", AUTH_HEADER);
-                
                 xhr.onload = function() {
-                    if (xhr.status >= 200 && xhr.status < 400) {
+                    if (xhr.status === 200) {
                         try {
-                            const res = JSON.parse(xhr.responseText);
-                            let data = res.data ? (Array.isArray(res.data) ? res.data[0] : res.data) : res;
-                            if (data && typeof data === 'object') {
-                                results[index] = data;
-                            }
+                            const json = JSON.parse(xhr.responseText);
+                            const data = json.data ? (Array.isArray(json.data) ? json.data[0] : json.data) : json;
+                            if(data) finalResults[idx] = data;
                         } catch(e) {}
                     }
-                    checkDone();
+                    resCount++;
+                    if(resCount === ids.length) renderAll(finalResults.filter(d => d));
                 };
-                xhr.onerror = function() { checkDone(); };
+                xhr.onerror = function() {
+                    resCount++;
+                    if(resCount === ids.length) renderAll(finalResults.filter(d => d));
+                };
                 xhr.send();
             });
-
-            function checkDone() {
-                completed++;
-                if (completed === machineIds.length) {
-                    const validData = results.filter(item => item !== undefined);
-                    if (validData.length > 0) {
-                        document.getElementById('totalMachines').innerText = validData.length;
-                        document.getElementById('lastUpdate').innerText = "Last Update: " + new Date().toLocaleTimeString('id-ID');
-                        renderTable(validData);
-                        renderChart(validData);
-                    }
-                }
-            }
         }
 
-        function renderTable(data) {
+        function renderAll(data) {
+            document.getElementById('totalMachines').innerText = data.length;
+            document.getElementById('lastUpdate').innerText = "Last Update: " + new Date().toLocaleTimeString('id-ID');
+            
+            // Render Table
             const tbody = document.getElementById('tableBody');
-            let html = '';
+            let html = "";
             data.forEach(item => {
-                const idx = item.Aktif_Outlet || "1";
+                const o = item.Aktif_Outlet || "1";
                 html += "<tr>" +
-                    "<td class='opacity-40 font-mono'>" + (item.id_mesin || '-') + "</td>" +
-                    "<td class='font-bold text-blue-400'>" + (item.Nama_ID || '-') + "</td>" +
+                    "<td>" + (item.id_mesin || '-') + "</td>" +
+                    "<td class='text-blue-400 font-bold'>" + (item.Nama_ID || '-') + "</td>" +
                     "<td>" + (item.Nama_Material || '-') + "</td>" +
-                    "<td class='opacity-60'>" + (item.NoPO || '-') + "</td>" +
-                    "<td class='stock-yellow font-bold'>" + formatIndo(item.Stock) + "</td>" +
-                    "<td class='text-indigo-300 italic font-semibold'>" + (item['Outlet_'+idx+'_Nama'] || '-') + "</td>" +
-                    "<td class='text-active-green font-bold'>" + formatIndo(item['Outlet_'+idx+'_Target']) + "</td>" +
-                    "<td class='text-active-green font-bold'>" + formatIndo(item.Aktual) + "</td>" +
+                    "<td>" + (item.NoPO || '-') + "</td>" +
+                    "<td class='stock-yellow font-bold'>" + (parseFloat(item.Stock)||0).toLocaleString('id-ID') + "</td>" +
+                    "<td class='text-indigo-300'>" + (item['Outlet_'+o+'_Nama'] || '-') + "</td>" +
+                    "<td class='text-active-green'>" + (parseFloat(item['Outlet_'+o+'_Target'])||0).toLocaleString('id-ID') + "</td>" +
+                    "<td class='text-active-green'>" + (parseFloat(item.Aktual)||0).toLocaleString('id-ID') + "</td>" +
                 "</tr>";
             });
             tbody.innerHTML = html;
-        }
 
-        function renderChart(data) {
+            // Render Chart
             const ctx = document.getElementById('stockChart').getContext('2d');
-            const labels = data.map(item => [item.Nama_ID || 'M-'+item.id_mesin, item.Nama_Material || '']);
-            const stocks = data.map(item => parseFloat(item.Stock) || 0);
-
             if (stockChart) stockChart.destroy();
             stockChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: data.map(d => d.Nama_ID || d.id_mesin),
                     datasets: [{
-                        label: 'Stock (Kg)',
-                        data: stocks,
-                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
-                        borderRadius: 5
+                        data: data.map(d => parseFloat(d.Stock)||0),
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
                     }]
                 },
-                options: {
-                    responsive: true,
+                options: { 
+                    responsive: true, 
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
-                        x: { grid: { display: false }, ticks: { color: '#ffffff', font: { size: 10 } } }
-                    }
+                    plugins: { legend: { display: false } }
                 }
             });
         }
 
-        // Jalankan Inisialisasi
         initUser();
         updateDashboard();
         setInterval(updateDashboard, 15000);
