@@ -29,7 +29,12 @@
 
 <body class="p-4 md:p-8">
     <script>
-        const userData = JSON.parse(localStorage.getItem('user_data'));
+        // Gunakan try-catch untuk localStorage agar tidak crash di WebViewer tertentu
+        let userData = null;
+        try {
+            userData = JSON.parse(localStorage.getItem('user_data'));
+        } catch(e) { console.log("Storage Error"); }
+
         if (!localStorage.getItem('isLoggedIn') || !userData) {
             window.location.href = 'index.html';
         }
@@ -38,7 +43,6 @@
         const maxIdleTime = 10; 
 
         function resetTimer() { idleTime = 0; }
-
         window.onload = resetTimer;
         window.onmousemove = resetTimer;
         window.onmousedown = resetTimer; 
@@ -49,7 +53,7 @@
         setInterval(function() {
             idleTime++;
             if (idleTime >= maxIdleTime) {
-                alert("Sesi Anda berakhir karena tidak ada aktivitas selama " + maxIdleTime + " menit.");
+                alert("Sesi Anda berakhir.");
                 logoutUser();
             }
         }, 60000); 
@@ -57,7 +61,7 @@
 
     <div class="container mx-auto">
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-white mb-2">Realtime Status xFlowmeter</h1>
+            <h1 class="text-3xl font-bold text-white mb-2">Realtime Status yFlowmeter</h1>
             <div id="currentTime" class="text-white text-lg font-mono mb-1">00:00:00</div>
             <p id="welcomeUser" class="text-blue-300 opacity-80 uppercase tracking-widest text-[10px]">Loading User...</p>
             <p id="lastUpdate" class="text-emerald-400 text-[9px] mt-2 italic">Last Update: Waiting for data...</p>
@@ -113,23 +117,20 @@
     <script>
         function updateClock() {
             const now = new Date();
-            const timeStr = now.toLocaleTimeString('id-ID', { hour12: false });
-            document.getElementById('currentTime').innerText = timeStr;
+            document.getElementById('currentTime').innerText = now.toLocaleTimeString('id-ID', { hour12: false });
         }
         setInterval(updateClock, 1000);
         updateClock();
 
         if (userData) {
-            document.getElementById('welcomeUser').innerText = `USER: ${userData.username} | MONITORING SYSTEM DATA RESULT`;
+            document.getElementById('welcomeUser').innerText = "USER: " + userData.username + " | MONITORING SYSTEM DATA RESULT";
             if(userData.akses && (userData.akses.history == 1 || userData.akses.history == "1")) document.getElementById('btn-history').classList.remove('hidden');
             if(userData.akses && (userData.akses.kontrol == 1 || userData.akses.kontrol == "1")) document.getElementById('btn-transaksi').classList.remove('hidden');
         }
 
         const API_URL = 'https://plantopr.propanraya.com/api/flowmeter/result_flowmeter';
         const AUTH_HEADER = 'Basic bnVyZGpheWEuYXRtYWphQHByb3BhbnJheWEuY29tOmllcHJvcGFu';
-        
         let stockChart;
-        const barColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
         function logoutUser() {
             localStorage.clear();
@@ -141,74 +142,81 @@
             return num.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        async function updateDashboard() {
-            try {
-                const machineIds = ['1', '2', '3', '4', '5'];
-                const fetchPromises = machineIds.map(id => 
-                    fetch(`${API_URL}?id_mesin=${id}`, {
-                        headers: { 'Authorization': AUTH_HEADER }
-                    }).then(res => res.json())
-                );
+        // --- PENGGANTI FETCH DENGAN XHR (LEBIH STABIL DI APK) ---
+        function updateDashboard() {
+            const machineIds = ['1', '2', '3', '4', '5'];
+            let results = [];
+            let completed = 0;
 
-                const results = await Promise.all(fetchPromises);
+            machineIds.forEach((id, index) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open("GET", API_URL + "?id_mesin=" + id, true);
+                xhr.setRequestHeader("Authorization", AUTH_HEADER);
                 
-                // --- PERBAIKAN LOGIKA DISINI ---
-                const validData = results.map((res, index) => {
-                    // Cek jika data ada di .data atau objek langsung
-                    let actualData = res.data ? (Array.isArray(res.data) ? res.data[0] : res.data) : res;
-                    // Jika data valid, kembalikan, jika tidak null
-                    return (actualData && typeof actualData === 'object') ? actualData : null;
-                }).filter(item => item !== null);
+                xhr.onload = function() {
+                    if (xhr.status >= 200 && xhr.status < 400) {
+                        try {
+                            const res = JSON.parse(xhr.responseText);
+                            let data = res.data ? (Array.isArray(res.data) ? res.data[0] : res.data) : res;
+                            if (data && typeof data === 'object') {
+                                results[index] = data;
+                            }
+                        } catch(e) {}
+                    }
+                    checkDone();
+                };
+                
+                xhr.onerror = function() { checkDone(); };
+                xhr.send();
+            });
 
-                if (validData.length > 0) {
-                    document.getElementById('totalMachines').innerText = validData.length;
-                    const now = new Date();
-                    document.getElementById('lastUpdate').innerText = `Last Update: ${now.toLocaleTimeString('id-ID')} (Every 15s)`;
-                    renderTable(validData);
-                    renderChart(validData);
-                } else {
-                    document.getElementById('lastUpdate').innerText = "Last Update: Data Empty";
+            function checkDone() {
+                completed++;
+                if (completed === machineIds.length) {
+                    const validData = results.filter(item => item !== undefined);
+                    if (validData.length > 0) {
+                        document.getElementById('totalMachines').innerText = validData.length;
+                        document.getElementById('lastUpdate').innerText = "Last Update: " + new Date().toLocaleTimeString('id-ID');
+                        renderTable(validData);
+                        renderChart(validData);
+                    }
                 }
-            } catch (error) {
-                console.error("Error Fetching API:", error);
-                document.getElementById('lastUpdate').innerText = "Last Update: Connection Error";
             }
         }
 
         function renderTable(data) {
             const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
+            let html = '';
             data.forEach(item => {
-                const aktifOutletIdx = item.Aktif_Outlet || "1";
-                const outletNama = item[`Outlet_${aktifOutletIdx}_Nama`] || "-";
-                const targetAktif = item[`Outlet_${aktifOutletIdx}_Target`] || 0;
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="opacity-40 font-mono">${item.id_mesin || '-'}</td>
-                        <td class="font-bold text-blue-400">${item.Nama_ID || '-'}</td>
-                        <td>${item.Nama_Material || '-'}</td>
-                        <td class="opacity-60">${item.NoPO || '-'}</td>
-                        <td class="stock-yellow font-bold">${formatIndo(item.Stock)}</td>
-                        <td class="text-indigo-300 italic font-semibold">${outletNama}</td>
-                        <td class="text-active-green font-bold">${formatIndo(targetAktif)}</td>
-                        <td class="text-active-green font-bold">${formatIndo(item.Aktual)}</td>
-                    </tr>`;
+                const idx = item.Aktif_Outlet || "1";
+                html += "<tr>" +
+                    "<td class='opacity-40 font-mono'>" + (item.id_mesin || '-') + "</td>" +
+                    "<td class='font-bold text-blue-400'>" + (item.Nama_ID || '-') + "</td>" +
+                    "<td>" + (item.Nama_Material || '-') + "</td>" +
+                    "<td class='opacity-60'>" + (item.NoPO || '-') + "</td>" +
+                    "<td class='stock-yellow font-bold'>" + formatIndo(item.Stock) + "</td>" +
+                    "<td class='text-indigo-300 italic font-semibold'>" + (item['Outlet_'+idx+'_Nama'] || '-') + "</td>" +
+                    "<td class='text-active-green font-bold'>" + formatIndo(item['Outlet_'+idx+'_Target']) + "</td>" +
+                    "<td class='text-active-green font-bold'>" + formatIndo(item.Aktual) + "</td>" +
+                "</tr>";
             });
+            tbody.innerHTML = html;
         }
 
         function renderChart(data) {
-            const labels = data.map(item => [item.Nama_ID || 'M-'+item.id_mesin, item.Nama_Material || 'N/A']);
-            const stockValues = data.map(item => parseFloat(item.Stock) || 0);
-            if (stockChart) stockChart.destroy();
             const ctx = document.getElementById('stockChart').getContext('2d');
+            const labels = data.map(item => [item.Nama_ID || 'M-'+item.id_mesin, item.Nama_Material || '']);
+            const stocks = data.map(item => parseFloat(item.Stock) || 0);
+
+            if (stockChart) stockChart.destroy();
             stockChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [{
                         label: 'Stock (Kg)',
-                        data: stockValues,
-                        backgroundColor: barColors,
+                        data: stocks,
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
                         borderRadius: 5
                     }]
                 },
